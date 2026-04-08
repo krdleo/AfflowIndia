@@ -1,0 +1,61 @@
+# AfflowIndia — Shopify App Configuration
+# Affiliate marketing app for Indian e-commerce merchants
+client_id = ""
+name = "AfflowIndia"
+application_url = ""
+embedded = true
+
+[access_scopes]
+# Minimum required scopes for BFS compliance
+# read_orders: for webhook order data attribution
+# write_discounts: for creating affiliate discount codes
+# write_app_proxy: for the affiliate portal proxy
+scopes = "read_orders, write_discounts, write_app_proxy"
+
+[auth]
+redirect_urls = [
+  "/auth/callback",
+  "/auth/shopify/callback",
+]
+
+[build]
+automatically_update_urls_on_dev = true
+include_config_on_deploy = true
+
+[webhooks]
+api_version = "2026-04"
+
+  # Core: Order attribution — this is the main event for tracking affiliate sales
+  [[webhooks.subscriptions]]
+  topics = ["orders/create"]
+  uri = "/webhooks/orders/create"
+
+  # Core: App lifecycle management
+  [[webhooks.subscriptions]]
+  topics = ["app/uninstalled"]
+  uri = "/webhooks/app/uninstalled"
+
+  # Core: Scope changes
+  [[webhooks.subscriptions]]
+  topics = ["app/scopes_update"]
+  uri = "/webhooks/app/scopes_update"
+
+  # GDPR Mandatory compliance webhooks (required for App Store)
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/customers/data_request"
+  compliance_topics = ["customers/data_request"]
+
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/customers/redact"
+  compliance_topics = ["customers/redact"]
+
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/shop/redact"
+  compliance_topics = ["shop/redact"]
+
+# App Proxy configuration for affiliate portal
+# Affiliates access: store.myshopify.com/a/ref/...
+[app_proxy]
+url = "/proxy"
+prefix = "a"
+subpath = "ref"

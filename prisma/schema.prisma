@@ -1,0 +1,249 @@
+// AfflowIndia — Prisma Schema
+// PostgreSQL database with all models for affiliate marketing app
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────────
+
+enum Plan {
+  FREE
+  STARTER
+  PRO
+}
+
+enum PayoutMode {
+  MANUAL
+  RAZORPAY_X
+}
+
+enum CommissionMode {
+  FLAT
+  TIERED
+}
+
+enum AffiliateStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  FLAGGED
+}
+
+enum PayoutStatus {
+  PENDING
+  APPROVED
+  PAID
+  FAILED
+}
+
+enum PayoutMethod {
+  MANUAL
+  RAZORPAY_X
+}
+
+// ─── Shopify Session (required by @shopify/shopify-app-session-storage-prisma) ──
+
+model Session {
+  id                  String    @id
+  shop                String
+  state               String
+  isOnline            Boolean   @default(false)
+  scope               String?
+  expires             DateTime?
+  accessToken         String
+  userId              BigInt?
+  firstName           String?
+  lastName            String?
+  email               String?
+  accountOwner        Boolean   @default(false)
+  locale              String?
+  collaborator        Boolean?  @default(false)
+  emailVerified       Boolean?  @default(false)
+  refreshToken        String?
+  refreshTokenExpires DateTime?
+}
+
+// ─── Shop ────────────────────────────────────────────────────
+
+model Shop {
+  id                    String         @id @default(uuid())
+  shopDomain            String         @unique
+  accessTokenEncrypted  String         // AES-256-GCM encrypted Shopify access token
+  accessTokenIv         String         // Initialization vector for decryption
+  accessTokenTag        String         // Auth tag for verification
+  scope                 String
+  isActive              Boolean        @default(true)
+  plan                  Plan           @default(FREE)
+  payoutMode            PayoutMode     @default(MANUAL)
+  razorpayXConfig       String?        // JSON, encrypted — { keyId, keySecret, accountNumber }
+
+  commissionMode        CommissionMode @default(FLAT)
+  defaultCommissionRate Decimal        @default(10)
+  commissionTiers       Json?          // Array of { thresholdAmount, ratePercent }
+
+  portalCustomization   Json?          // { programName, logoUrl, bannerUrl, primaryColor, accentColor, welcomeHeading, welcomeMessage, termsText, signupsEnabled, requireApproval, fieldToggles }
+
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  // Relations
+  affiliates            Affiliate[]
+  referrals             Referral[]
+  payouts               Payout[]
+  gstSetting            GstSetting?
+  tdsSetting            TdsSetting?
+}
+
+// ─── Affiliate ───────────────────────────────────────────────
+
+model Affiliate {
+  id                      String          @id @default(uuid())
+  shopId                  String
+  shop                    Shop            @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  code                    String          // Discount code (e.g., "PRIYA10")
+  referralCode            String          // URL-safe code for click tracking links
+
+  name                    String
+  email                   String
+  phone                   String?
+  upiId                   String?
+
+  passwordHash            String          // bcrypt, 12 rounds
+
+  status                  AffiliateStatus @default(PENDING)
+  emailVerified           Boolean         @default(false)
+  verificationToken       String?
+  verificationTokenExpiry DateTime?
+  resetPasswordToken      String?
+  resetPasswordExpiry     DateTime?
+
+  commissionRate          Decimal         // Per-affiliate rate (override)
+  discountPercent         Decimal         @default(10)
+
+  totalClicks             Int             @default(0)
+  totalSales              Decimal         @default(0)
+  pendingCommission       Decimal         @default(0)
+
+  discountCodeId          String?         // Shopify GraphQL discount code GID
+  priceRuleId             String?         // Shopify GraphQL discount node GID
+
+  // Encrypted PII fields (AES-256-GCM)
+  panEncrypted            String?
+  panIv                   String?
+  panTag                  String?
+  panLast4                String?         // Unencrypted for display
+  gstinEncrypted          String?
+  gstinIv                 String?
+  gstinTag                String?
+  legalNameEncrypted      String?
+  legalNameIv             String?
+  legalNameTag            String?
+  addressEncrypted        String?
+  addressIv               String?
+  addressTag              String?
+  bankDetailsEncrypted    String?
+  bankDetailsIv           String?
+  bankDetailsTag          String?
+
+  // Unencrypted location fields (for filtering)
+  city                    String?
+  state                   String?
+  pincode                 String?
+
+  lastLogin               DateTime?
+
+  createdAt               DateTime        @default(now())
+  updatedAt               DateTime        @updatedAt
+
+  // Relations
+  referrals               Referral[]
+  payouts                 Payout[]
+
+  // Indexes
+  @@unique([shopId, code])
+  @@index([shopId, status])
+  @@index([referralCode])
+  @@index([email, shopId])
+  @@index([verificationToken])
+}
+
+// ─── Referral ────────────────────────────────────────────────
+
+model Referral {
+  id               String    @id @default(uuid())
+  shopId           String
+  shop             Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  affiliateId      String
+  affiliate        Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+
+  orderId          String    // Shopify order GID or numeric ID as string
+  orderAmount      Decimal
+  commissionAmount Decimal   // Calculated at creation time
+  commissionRate   Decimal   // Snapshot of rate used
+
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  // Idempotency guard: prevent duplicate webhook processing
+  @@unique([shopId, orderId])
+  @@index([affiliateId])
+}
+
+// ─── Payout ──────────────────────────────────────────────────
+
+model Payout {
+  id                String       @id @default(uuid())
+  shopId            String
+  shop              Shop         @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  affiliateId       String
+  affiliate         Affiliate    @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+
+  amount            Decimal
+  currency          String       @default("INR")
+  mode              PayoutMethod @default(MANUAL)
+  status            PayoutStatus @default(PENDING)
+
+  baseAmount        Decimal      // Commission before tax
+  gstAmount         Decimal      @default(0)
+  tdsAmount         Decimal      @default(0)
+
+  reference         String?      // Internal note
+  externalReference String?      // Razorpay X payout ID
+
+  paidAt            DateTime?
+
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  // Indexes
+  @@index([shopId, status, createdAt])
+  @@index([affiliateId, status])
+}
+
+// ─── GST Setting ─────────────────────────────────────────────
+
+model GstSetting {
+  id        String  @id @default(uuid())
+  shopId    String  @unique
+  shop      Shop    @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  isEnabled Boolean @default(false)
+  gstRate   Decimal @default(18)
+}
+
+// ─── TDS Setting ─────────────────────────────────────────────
+
+model TdsSetting {
+  id              String  @id @default(uuid())
+  shopId          String  @unique
+  shop            Shop    @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  isEnabled       Boolean @default(false)
+  tdsRate         Decimal @default(10)
+  annualThreshold Decimal @default(20000)
+}
