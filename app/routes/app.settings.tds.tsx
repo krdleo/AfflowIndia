@@ -3,12 +3,21 @@
  */
 import { useState, useEffect } from "react";
 import type { ActionFunctionArgs, HeadersFunction, LoaderFunctionArgs } from "react-router";
-import { useLoaderData, useFetcher } from "react-router";
-import { useAppBridge } from "@shopify/app-bridge-react";
+import { useLoaderData, useFetcher, useNavigate } from "react-router";
 import { authenticate } from "../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import db from "../db.server";
 import { planHasFeature } from "../lib/plan-features.server";
+import {
+  Page,
+  Banner,
+  Button,
+  Card,
+  Checkbox,
+  TextField,
+  Text,
+  BlockStack,
+} from "@shopify/polaris";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
@@ -50,7 +59,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 export default function TdsSettings() {
   const { isEnabled, tdsRate, annualThreshold, canUseTds } = useLoaderData<typeof loader>();
   const fetcher = useFetcher<typeof action>();
-  const shopify = useAppBridge();
+  const navigate = useNavigate();
   const [enabled, setEnabled] = useState(isEnabled);
   const [rate, setRate] = useState(tdsRate.toString());
   const [threshold, setThreshold] = useState(annualThreshold.toString());
@@ -58,37 +67,87 @@ export default function TdsSettings() {
   useEffect(() => {
     if (fetcher.data) {
       const data = fetcher.data as Record<string, unknown>;
-      if (data.success) shopify.toast.show(data.message as string);
-      if (data.error) shopify.toast.show(data.error as string, { isError: true });
+      // removed shopify toast 
     }
-  }, [fetcher.data, shopify]);
+  }, [fetcher.data]);
 
   if (!canUseTds) {
     return (
-      <s-page heading="TDS Settings" backAction={{ url: "/app/settings" }}>
-        <s-banner tone="warning">TDS compliance features require the Pro plan. <s-button href="/app/settings/billing" variant="primary">Upgrade</s-button></s-banner>
-      </s-page>
+      <Page
+        title="TDS Settings"
+        backAction={{ content: "Settings", onAction: () => navigate("/app/settings") }}
+      >
+        <Banner tone="warning">
+          <p>
+            TDS compliance features require the Pro plan.{" "}
+            <Button
+              variant="primary"
+              onClick={() => navigate("/app/settings/billing")}
+            >
+              Upgrade
+            </Button>
+          </p>
+        </Banner>
+      </Page>
     );
   }
 
   return (
-    <s-page heading="TDS Settings" backAction={{ url: "/app/settings" }}>
-      <s-button slot="primary-action" variant="primary" onClick={() => {
-        fetcher.submit({ isEnabled: String(enabled), tdsRate: rate, annualThreshold: threshold }, { method: "POST" });
-      }}>Save</s-button>
+    <Page
+      title="TDS Settings"
+      backAction={{ content: "Settings", onAction: () => navigate("/app/settings") }}
+      primaryAction={{
+        content: "Save",
+        onAction: () => {
+          fetcher.submit(
+            { isEnabled: String(enabled), tdsRate: rate, annualThreshold: threshold },
+            { method: "POST" }
+          );
+        },
+      }}
+    >
+      <Card>
+        <BlockStack gap="400">
+          <BlockStack gap="100">
+            <Text as="h2" variant="headingMd">TDS Compliance</Text>
+            <Text as="p" tone="subdued">
+              When enabled, TDS will be deducted from payouts when an affiliate's cumulative payouts exceed the annual threshold.
+            </Text>
+          </BlockStack>
+          
+          <Checkbox
+            label="Enable TDS deduction"
+            checked={enabled}
+            onChange={(newChecked) => setEnabled(newChecked)}
+          />
 
-      <s-card>
-        <s-text variant="headingMd">TDS Compliance</s-text>
-        <s-text tone="subdued">When enabled, TDS will be deducted from payouts when an affiliate's cumulative payouts exceed the annual threshold.</s-text>
-        <s-checkbox checked={enabled ? true : undefined} onChange={(e: CustomEvent) => setEnabled((e.target as HTMLInputElement).checked)}>Enable TDS deduction</s-checkbox>
-        {enabled && (
-          <>
-            <s-text-field label="TDS Rate (%)" type="number" value={rate} min="0" max="100" step="0.5" onInput={(e: CustomEvent) => setRate((e.target as HTMLInputElement).value)} helpText="Default: 10% (Section 194H)" />
-            <s-text-field label="Annual Threshold (₹)" type="number" value={threshold} min="0" onInput={(e: CustomEvent) => setThreshold((e.target as HTMLInputElement).value)} helpText="TDS applies only when cumulative payouts exceed this amount in a financial year. Default: ₹20,000" />
-          </>
-        )}
-      </s-card>
-    </s-page>
+          {enabled && (
+            <>
+              <TextField
+                label="TDS Rate (%)"
+                type="number"
+                value={rate}
+                min={0}
+                max={100}
+                step={0.5}
+                onChange={(value) => setRate(value)}
+                helpText="Default: 10% (Section 194H)"
+                autoComplete="off"
+              />
+              <TextField
+                label="Annual Threshold (₹)"
+                type="number"
+                value={threshold}
+                min={0}
+                onChange={(value) => setThreshold(value)}
+                helpText="TDS applies only when cumulative payouts exceed this amount in a financial year. Default: ₹20,000"
+                autoComplete="off"
+              />
+            </>
+          )}
+        </BlockStack>
+      </Card>
+    </Page>
   );
 }
 

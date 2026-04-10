@@ -8,12 +8,22 @@
 
 import { useState, useEffect } from "react";
 import type { ActionFunctionArgs, HeadersFunction, LoaderFunctionArgs } from "react-router";
-import { useLoaderData, useFetcher } from "react-router";
-import { useAppBridge } from "@shopify/app-bridge-react";
+import { useLoaderData, useFetcher, useNavigate } from "react-router";
 import { authenticate } from "../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import db from "../db.server";
 import { planHasFeature } from "../lib/plan-features.server";
+import {
+  Page,
+  Card,
+  Text,
+  Button,
+  ChoiceList,
+  TextField,
+  InlineStack,
+  BlockStack,
+  Box,
+} from "@shopify/polaris";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
@@ -59,9 +69,9 @@ export default function CommissionSettings() {
   const { commissionMode, defaultCommissionRate, commissionTiers, canUseTiered } =
     useLoaderData<typeof loader>();
   const fetcher = useFetcher<typeof action>();
-  const shopify = useAppBridge();
+  const navigate = useNavigate();
 
-  const [mode, setMode] = useState(commissionMode);
+  const [mode, setMode] = useState<"FLAT" | "TIERED">(commissionMode);
   const [rate, setRate] = useState(defaultCommissionRate.toString());
   const [tiers, setTiers] = useState(commissionTiers);
 
@@ -71,7 +81,7 @@ export default function CommissionSettings() {
       if (data.success) shopify.toast.show(data.message as string);
       if (data.error) shopify.toast.show(data.error as string, { isError: true });
     }
-  }, [fetcher.data, shopify]);
+  }, [fetcher.data]);
 
   const handleSave = () => {
     fetcher.submit(
@@ -92,93 +102,103 @@ export default function CommissionSettings() {
     setTiers(tiers.filter((_, i) => i !== index));
   };
 
-  const updateTier = (index: number, field: string, value: number) => {
+  const updateTier = (index: number, field: string, value: string) => {
     const updated = [...tiers];
-    updated[index] = { ...updated[index], [field]: value };
+    updated[index] = { ...updated[index], [field]: parseFloat(value) || 0 };
     setTiers(updated);
   };
 
   return (
-    <s-page heading="Commission Settings" backAction={{ url: "/app/settings" }}>
-      <s-button slot="primary-action" variant="primary" onClick={handleSave}>
-        Save
-      </s-button>
+    <Page
+      title="Commission Settings"
+      backAction={{ content: "Settings", onAction: () => navigate("/app/settings") }}
+      primaryAction={{ content: "Save", onAction: handleSave }}
+    >
+      <BlockStack gap="400">
+        <Card>
+          <BlockStack gap="400">
+            <Text as="h2" variant="headingMd">Commission Mode</Text>
+            <ChoiceList
+              title="How should commissions be calculated?"
+              choices={[
+                { label: "Flat Rate — Same percentage for all affiliates", value: "FLAT" },
+                {
+                  label: "Tiered — Different rates based on affiliate performance" +
+                         (!canUseTiered ? " (Starter plan required)" : ""),
+                  value: "TIERED",
+                  disabled: !canUseTiered,
+                },
+              ]}
+              selected={[mode]}
+              onChange={(selections) => setMode(selections[0] as "FLAT" | "TIERED")}
+            />
+          </BlockStack>
+        </Card>
 
-      <s-card>
-        <s-text variant="headingMd">Commission Mode</s-text>
-        <s-stack direction="block" gap="base">
-          <s-choice-list
-            title="How should commissions be calculated?"
-            selected={[mode]}
-            onChange={(e: CustomEvent) => setMode(e.detail[0])}
-          >
-            <s-choice value="FLAT">
-              Flat Rate — Same percentage for all affiliates
-            </s-choice>
-            <s-choice value="TIERED" disabled={!canUseTiered}>
-              Tiered — Different rates based on affiliate performance
-              {!canUseTiered && " (Starter plan required)"}
-            </s-choice>
-          </s-choice-list>
-        </s-stack>
-      </s-card>
+        <Card>
+          <BlockStack gap="400">
+            <Text as="h2" variant="headingMd">Default Commission Rate</Text>
+            <TextField
+              label="Commission Rate (%)"
+              type="number"
+              value={rate}
+              min={0}
+              max={100}
+              step={0.5}
+              onChange={(value) => setRate(value)}
+              helpText="This rate applies to all affiliates unless overridden"
+              autoComplete="off"
+            />
+          </BlockStack>
+        </Card>
 
-      <s-card>
-        <s-text variant="headingMd">Default Commission Rate</s-text>
-        <s-text-field
-          label="Commission Rate (%)"
-          type="number"
-          value={rate}
-          min="0"
-          max="100"
-          step="0.5"
-          onInput={(e: CustomEvent) => setRate((e.target as HTMLInputElement).value)}
-          helpText="This rate applies to all affiliates unless overridden"
-        />
-      </s-card>
+        {mode === "TIERED" && (
+          <Card>
+            <BlockStack gap="400">
+              <Text as="h2" variant="headingMd">Commission Tiers</Text>
+              <Text as="p" tone="subdued">
+                Define sales thresholds and their corresponding commission rates.
+                Affiliates automatically get the highest tier they qualify for.
+              </Text>
 
-      {mode === "TIERED" && (
-        <s-card>
-          <s-text variant="headingMd">Commission Tiers</s-text>
-          <s-text tone="subdued">
-            Define sales thresholds and their corresponding commission rates.
-            Affiliates automatically get the highest tier they qualify for.
-          </s-text>
+              <BlockStack gap="300">
+                {tiers.map((tier, index) => (
+                  <Box key={index} padding="300" background="bg-surface-secondary" borderRadius="200">
+                    <InlineStack gap="300" align="end">
+                      <TextField
+                        label={`Tier ${index + 1} — Sales Threshold (₹)`}
+                        type="number"
+                        value={tier.thresholdAmount.toString()}
+                        min={0}
+                        onChange={(value) => updateTier(index, "thresholdAmount", value)}
+                        autoComplete="off"
+                      />
+                      <TextField
+                        label="Commission Rate (%)"
+                        type="number"
+                        value={tier.ratePercent.toString()}
+                        min={0}
+                        max={100}
+                        step={0.5}
+                        onChange={(value) => updateTier(index, "ratePercent", value)}
+                        autoComplete="off"
+                      />
+                      <Button tone="critical" onClick={() => removeTier(index)}>
+                        Remove
+                      </Button>
+                    </InlineStack>
+                  </Box>
+                ))}
+              </BlockStack>
 
-          {tiers.map((tier, index) => (
-            <s-card key={index}>
-              <s-stack direction="inline" gap="base" align="end">
-                <s-text-field
-                  label={`Tier ${index + 1} — Sales Threshold (₹)`}
-                  type="number"
-                  value={tier.thresholdAmount.toString()}
-                  min="0"
-                  onInput={(e: CustomEvent) =>
-                    updateTier(index, "thresholdAmount", parseFloat((e.target as HTMLInputElement).value) || 0)
-                  }
-                />
-                <s-text-field
-                  label="Commission Rate (%)"
-                  type="number"
-                  value={tier.ratePercent.toString()}
-                  min="0"
-                  max="100"
-                  step="0.5"
-                  onInput={(e: CustomEvent) =>
-                    updateTier(index, "ratePercent", parseFloat((e.target as HTMLInputElement).value) || 0)
-                  }
-                />
-                <s-button tone="critical" onClick={() => removeTier(index)}>
-                  Remove
-                </s-button>
-              </s-stack>
-            </s-card>
-          ))}
-
-          <s-button onClick={addTier}>+ Add Tier</s-button>
-        </s-card>
-      )}
-    </s-page>
+              <InlineStack>
+                <Button onClick={addTier}>+ Add Tier</Button>
+              </InlineStack>
+            </BlockStack>
+          </Card>
+        )}
+      </BlockStack>
+    </Page>
   );
 }
 

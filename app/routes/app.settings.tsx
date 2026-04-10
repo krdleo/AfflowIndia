@@ -37,93 +37,106 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   };
 };
 
+import {
+  Page,
+  Layout,
+  Card,
+  Text,
+  Button,
+  Badge,
+  InlineStack,
+  BlockStack,
+} from "@shopify/polaris";
+
 export default function Settings() {
   const { shop } = useLoaderData<typeof loader>();
 
   return (
-    <s-page heading="Settings">
-      <s-layout>
-        <s-layout-section>
-          {/* Commission Settings */}
-          <s-card>
-            <s-stack direction="inline" gap="base" align="space-between">
-              <s-stack direction="block" gap="tight">
-                <s-text variant="headingMd">Commission Settings</s-text>
-                <s-text tone="subdued">
-                  Mode: {shop.commissionMode} · Default rate: {shop.defaultCommissionRate}%
-                </s-text>
-              </s-stack>
-              <s-button href="/app/settings/commission">Configure</s-button>
-            </s-stack>
-          </s-card>
+    <Page title="Settings">
+      <Layout>
+        <Layout.Section>
+          <BlockStack gap="400">
+            {/* Commission Settings */}
+            <Card>
+              <InlineStack align="space-between">
+                <BlockStack gap="100">
+                  <Text as="h2" variant="headingMd">Commission Settings</Text>
+                  <Text as="p" tone="subdued">
+                    Mode: {shop.commissionMode} · Default rate: {shop.defaultCommissionRate}%
+                  </Text>
+                </BlockStack>
+                <Button url="/app/settings/commission">Configure</Button>
+              </InlineStack>
+            </Card>
 
-          {/* Payout Settings */}
-          <s-card>
-            <s-stack direction="inline" gap="base" align="space-between">
-              <s-stack direction="block" gap="tight">
-                <s-text variant="headingMd">Payout Settings</s-text>
-                <s-text tone="subdued">
-                  Mode: {shop.payoutMode === "RAZORPAY_X" ? "Razorpay X (Auto)" : "Manual"}
-                </s-text>
-              </s-stack>
-              <s-button href="/app/settings/payout">Configure</s-button>
-            </s-stack>
-          </s-card>
+            {/* Payout Settings */}
+            <Card>
+              <InlineStack align="space-between">
+                <BlockStack gap="100">
+                  <Text as="h2" variant="headingMd">Payout Settings</Text>
+                  <Text as="p" tone="subdued">
+                    Mode: {shop.payoutMode === "RAZORPAY_X" ? "Razorpay X (Auto)" : "Manual"}
+                  </Text>
+                </BlockStack>
+                <Button url="/app/settings/payout">Configure</Button>
+              </InlineStack>
+            </Card>
 
-          {/* Portal Customization */}
-          <s-card>
-            <s-stack direction="inline" gap="base" align="space-between">
-              <s-stack direction="block" gap="tight">
-                <s-text variant="headingMd">Portal Customization</s-text>
-                <s-text tone="subdued">
-                  Customize your affiliate portal&apos;s look and feel
-                </s-text>
-              </s-stack>
-              <s-button href="/app/settings/portal">Customize</s-button>
-            </s-stack>
-          </s-card>
+            {/* Portal Customization */}
+            <Card>
+              <InlineStack align="space-between">
+                <BlockStack gap="100">
+                  <Text as="h2" variant="headingMd">Portal Customization</Text>
+                  <Text as="p" tone="subdued">
+                    Customize your affiliate portal&apos;s look and feel
+                  </Text>
+                </BlockStack>
+                <Button url="/app/settings/portal">Customize</Button>
+              </InlineStack>
+            </Card>
 
-          {/* GST Settings */}
-          <s-card>
-            <s-stack direction="inline" gap="base" align="space-between">
-              <s-stack direction="block" gap="tight">
-                <s-text variant="headingMd">GST Settings</s-text>
-                <s-text tone="subdued">
-                  {shop.gstEnabled ? `Enabled · ${shop.gstRate}% rate` : "Disabled"}
-                </s-text>
-              </s-stack>
-              <s-button href="/app/settings/gst">Configure</s-button>
-            </s-stack>
-          </s-card>
+            {/* GST Settings */}
+            <Card>
+              <InlineStack align="space-between">
+                <BlockStack gap="100">
+                  <Text as="h2" variant="headingMd">GST Settings</Text>
+                  <Text as="p" tone="subdued">
+                    {shop.gstEnabled ? `Enabled · ${shop.gstRate}% rate` : "Disabled"}
+                  </Text>
+                </BlockStack>
+                <Button url="/app/settings/gst">Configure</Button>
+              </InlineStack>
+            </Card>
 
-          {/* TDS Settings */}
-          <s-card>
-            <s-stack direction="inline" gap="base" align="space-between">
-              <s-stack direction="block" gap="tight">
-                <s-text variant="headingMd">TDS Settings</s-text>
-                <s-text tone="subdued">
-                  {shop.tdsEnabled ? `Enabled · ${shop.tdsRate}% rate` : "Disabled"}
-                </s-text>
-              </s-stack>
-              <s-button href="/app/settings/tds">Configure</s-button>
-            </s-stack>
-          </s-card>
+            {/* TDS Settings */}
+            <Card>
+              <InlineStack align="space-between">
+                <BlockStack gap="100">
+                  <Text as="h2" variant="headingMd">TDS Settings</Text>
+                  <Text as="p" tone="subdued">
+                    {shop.tdsEnabled ? `Enabled · ${shop.tdsRate}% rate` : "Disabled"}
+                  </Text>
+                </BlockStack>
+                <Button url="/app/settings/tds">Configure</Button>
+              </InlineStack>
+            </Card>
 
-          {/* Plan & Billing */}
-          <s-card>
-            <s-stack direction="inline" gap="base" align="space-between">
-              <s-stack direction="block" gap="tight">
-                <s-text variant="headingMd">Plan & Billing</s-text>
-                <s-badge tone={shop.plan === "FREE" ? "warning" : "success"}>
-                  {shop.plan} Plan
-                </s-badge>
-              </s-stack>
-              <s-button href="/app/settings/billing">Manage</s-button>
-            </s-stack>
-          </s-card>
-        </s-layout-section>
-      </s-layout>
-    </s-page>
+            {/* Plan & Billing */}
+            <Card>
+              <InlineStack align="space-between">
+                <BlockStack gap="100">
+                  <Text as="h2" variant="headingMd">Plan & Billing</Text>
+                  <Badge tone={shop.plan === "FREE" ? "warning" : "success"}>
+                    {`${shop.plan} Plan`}
+                  </Badge>
+                </BlockStack>
+                <Button url="/app/settings/billing">Manage</Button>
+              </InlineStack>
+            </Card>
+          </BlockStack>
+        </Layout.Section>
+      </Layout>
+    </Page>
   );
 }
 

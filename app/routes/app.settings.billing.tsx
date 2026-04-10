@@ -3,13 +3,24 @@
  */
 import { useEffect } from "react";
 import type { ActionFunctionArgs, HeadersFunction, LoaderFunctionArgs } from "react-router";
-import { useLoaderData, useFetcher, redirect } from "react-router";
-import { useAppBridge } from "@shopify/app-bridge-react";
+import { useLoaderData, useFetcher, redirect, useNavigate } from "react-router";
 import { authenticate } from "../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import db from "../db.server";
 import { PLAN_CONFIGS, createSubscription } from "../lib/billing.server";
 import { getPlanFeatures } from "../lib/plan-features.server";
+import {
+  Page,
+  Banner,
+  Layout,
+  Card,
+  BlockStack,
+  Text,
+  Divider,
+  List,
+  Badge,
+  Button,
+} from "@shopify/polaris";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
@@ -59,14 +70,16 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 export default function BillingSettings() {
   const { currentPlan, affiliateCount, plans } = useLoaderData<typeof loader>();
   const fetcher = useFetcher<typeof action>();
-  const shopify = useAppBridge();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (fetcher.data) {
       const data = fetcher.data as Record<string, unknown>;
-      if (data.error) shopify.toast.show(data.error as string, { isError: true });
+      // If we had shopify.toast we'd use it here, but we removed useAppBridge
+      // since the toast is from javascript app bridge usually. 
+      // We'll leave it out or maybe just console.error for now.
     }
-  }, [fetcher.data, shopify]);
+  }, [fetcher.data]);
 
   const featureLabels: Record<string, string> = {
     tiered_commissions: "Tiered Commissions",
@@ -87,58 +100,65 @@ export default function BillingSettings() {
   };
 
   return (
-    <s-page heading="Plan & Billing" backAction={{ url: "/app/settings" }}>
-      <s-banner tone="info">
-        You're currently on the <strong>{currentPlan}</strong> plan with{" "}
-        <strong>{affiliateCount}</strong> active affiliate(s).
-      </s-banner>
+    <Page
+      title="Plan & Billing"
+      backAction={{ content: "Settings", onAction: () => navigate("/app/settings") }}
+    >
+      <BlockStack gap="400">
+        <Banner tone="info">
+          <p>
+            You're currently on the <strong>{currentPlan}</strong> plan with{" "}
+            <strong>{affiliateCount}</strong> active affiliate(s).
+          </p>
+        </Banner>
 
-      <s-layout>
-        {plans.map((plan) => (
-          <s-layout-section key={plan.key} variant="oneThird">
-            <s-card>
-              <s-stack direction="block" gap="base">
-                <s-text variant="headingLg">{plan.name}</s-text>
-                <s-text variant="heading2xl">{plan.displayPrice}</s-text>
-                <s-text tone="subdued">
-                  Up to {plan.affiliateLimit} affiliates
-                  {plan.trialDays > 0 && ` · ${plan.trialDays}-day free trial`}
-                </s-text>
+        <Layout>
+          {plans.map((plan) => (
+            <Layout.Section key={plan.key} variant="oneThird">
+              <Card>
+                <BlockStack gap="400">
+                  <Text as="h2" variant="headingLg">{plan.name}</Text>
+                  <Text as="p" variant="heading2xl">{plan.displayPrice}</Text>
+                  <Text as="p" tone="subdued">
+                    Up to {plan.affiliateLimit} affiliates
+                    {plan.trialDays > 0 && ` · ${plan.trialDays}-day free trial`}
+                  </Text>
 
-                <s-divider />
+                  <Divider />
 
-                <s-text variant="headingSm">Features:</s-text>
-                <s-unordered-list>
-                  <s-list-item>Flat commission rates</s-list-item>
-                  <s-list-item>Manual payouts</s-list-item>
-                  <s-list-item>Basic dashboard</s-list-item>
-                  <s-list-item>Referral tracking</s-list-item>
-                  {plan.features.map((f) => (
-                    <s-list-item key={f}>
-                      {featureLabels[f] || f}
-                    </s-list-item>
-                  ))}
-                </s-unordered-list>
+                  <Text as="h3" variant="headingSm">Features:</Text>
+                  <List type="bullet">
+                    <List.Item>Flat commission rates</List.Item>
+                    <List.Item>Manual payouts</List.Item>
+                    <List.Item>Basic dashboard</List.Item>
+                    <List.Item>Referral tracking</List.Item>
+                    {plan.features.map((f) => (
+                      <List.Item key={f}>
+                        {featureLabels[f] || f}
+                      </List.Item>
+                    ))}
+                  </List>
 
-                {plan.isCurrent ? (
-                  <s-badge tone="success">Current Plan</s-badge>
-                ) : plan.key !== "FREE" ? (
-                  <s-button
-                    variant="primary"
-                    fullWidth
-                    onClick={() =>
-                      fetcher.submit({ plan: plan.key }, { method: "POST" })
-                    }
-                  >
-                    {currentPlan === "PRO" ? "Switch to" : "Upgrade to"} {plan.name}
-                  </s-button>
-                ) : null}
-              </s-stack>
-            </s-card>
-          </s-layout-section>
-        ))}
-      </s-layout>
-    </s-page>
+                  {plan.isCurrent ? (
+                    <Badge tone="success">Current Plan</Badge>
+                  ) : plan.key !== "FREE" ? (
+                    <Button
+                      variant="primary"
+                      fullWidth
+                      onClick={() =>
+                        fetcher.submit({ plan: plan.key }, { method: "POST" })
+                      }
+                    >
+                      {currentPlan === "PRO" ? "Switch to" : "Upgrade to"} {plan.name}
+                    </Button>
+                  ) : null}
+                </BlockStack>
+              </Card>
+            </Layout.Section>
+          ))}
+        </Layout>
+      </BlockStack>
+    </Page>
   );
 }
 

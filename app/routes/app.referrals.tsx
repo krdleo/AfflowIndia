@@ -10,6 +10,18 @@ import { useLoaderData, useSearchParams } from "react-router";
 import { authenticate } from "../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import db from "../db.server";
+import {
+  Page,
+  Badge,
+  Layout,
+  Card,
+  Text,
+  EmptyState,
+  IndexTable,
+  Button,
+  InlineStack,
+  BlockStack,
+} from "@shopify/polaris";
 
 const PAGE_SIZE = 20;
 
@@ -89,98 +101,115 @@ export default function Referrals() {
   const formatINR = (amount: number) =>
     `₹${amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
 
+  const rowMarkup = referrals.map((referral, index) => (
+    <IndexTable.Row key={referral.id} id={referral.id} position={index}>
+      <IndexTable.Cell>
+        <Text as="span" variant="bodyMd" fontWeight="semibold">
+          {referral.affiliateName}
+        </Text>
+      </IndexTable.Cell>
+      <IndexTable.Cell>
+        <Badge tone="info">{referral.affiliateCode}</Badge>
+      </IndexTable.Cell>
+      <IndexTable.Cell>
+        <Text as="span" variant="bodySm" tone="subdued">
+          #{referral.orderId}
+        </Text>
+      </IndexTable.Cell>
+      <IndexTable.Cell>{formatINR(referral.orderAmount)}</IndexTable.Cell>
+      <IndexTable.Cell>{referral.commissionRate}%</IndexTable.Cell>
+      <IndexTable.Cell>{formatINR(referral.commissionAmount)}</IndexTable.Cell>
+      <IndexTable.Cell>
+        {new Date(referral.createdAt).toLocaleDateString("en-IN")}
+      </IndexTable.Cell>
+    </IndexTable.Row>
+  ));
+
   return (
-    <s-page heading="Referral Tracking">
-      <s-badge slot="title-metadata">{totalCount} referrals</s-badge>
+    <Page
+      title="Referral Tracking"
+      titleMetadata={<Badge>{`${totalCount} referrals`}</Badge>}
+    >
+      <BlockStack gap="400">
+        {/* Summary Stats */}
+        <Layout>
+          <Layout.Section variant="oneThird">
+            <Card>
+              <BlockStack gap="200">
+                <Text as="h2" variant="headingMd">Total Orders</Text>
+                <Text as="p" variant="heading2xl">{totals.totalOrders}</Text>
+              </BlockStack>
+            </Card>
+          </Layout.Section>
+          <Layout.Section variant="oneThird">
+            <Card>
+              <BlockStack gap="200">
+                <Text as="h2" variant="headingMd">Total Sales</Text>
+                <Text as="p" variant="heading2xl">{formatINR(totals.totalSales)}</Text>
+              </BlockStack>
+            </Card>
+          </Layout.Section>
+          <Layout.Section variant="oneThird">
+            <Card>
+              <BlockStack gap="200">
+                <Text as="h2" variant="headingMd">Total Commissions</Text>
+                <Text as="p" variant="heading2xl">{formatINR(totals.totalCommissions)}</Text>
+              </BlockStack>
+            </Card>
+          </Layout.Section>
+        </Layout>
 
-      {/* Summary Stats */}
-      <s-layout>
-        <s-layout-section variant="oneThird">
-          <s-card>
-            <s-text variant="headingMd">Total Orders</s-text>
-            <s-text variant="heading2xl">{totals.totalOrders}</s-text>
-          </s-card>
-        </s-layout-section>
-        <s-layout-section variant="oneThird">
-          <s-card>
-            <s-text variant="headingMd">Total Sales</s-text>
-            <s-text variant="heading2xl">{formatINR(totals.totalSales)}</s-text>
-          </s-card>
-        </s-layout-section>
-        <s-layout-section variant="oneThird">
-          <s-card>
-            <s-text variant="headingMd">Total Commissions</s-text>
-            <s-text variant="heading2xl">{formatINR(totals.totalCommissions)}</s-text>
-          </s-card>
-        </s-layout-section>
-      </s-layout>
-
-      {/* Referrals Table */}
-      <s-card>
-        {referrals.length === 0 ? (
-          <s-empty-state
-            heading="No referrals yet"
-            image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
-          >
-            <s-text>
-              Referrals will appear here when customers use affiliate discount codes.
-            </s-text>
-          </s-empty-state>
-        ) : (
-          <s-data-table>
-            <s-data-table-head>
-              <s-data-table-header-cell>Affiliate</s-data-table-header-cell>
-              <s-data-table-header-cell>Code</s-data-table-header-cell>
-              <s-data-table-header-cell>Order ID</s-data-table-header-cell>
-              <s-data-table-header-cell>Order Amount</s-data-table-header-cell>
-              <s-data-table-header-cell>Commission Rate</s-data-table-header-cell>
-              <s-data-table-header-cell>Commission</s-data-table-header-cell>
-              <s-data-table-header-cell>Date</s-data-table-header-cell>
-            </s-data-table-head>
-            <s-data-table-body>
-              {referrals.map((referral) => (
-                <s-data-table-row key={referral.id}>
-                  <s-data-table-cell>
-                    <s-text variant="bodyMd" fontWeight="semibold">
-                      {referral.affiliateName}
-                    </s-text>
-                  </s-data-table-cell>
-                  <s-data-table-cell>
-                    <s-badge>{referral.affiliateCode}</s-badge>
-                  </s-data-table-cell>
-                  <s-data-table-cell>
-                    <s-text variant="bodySm" tone="subdued">
-                      #{referral.orderId}
-                    </s-text>
-                  </s-data-table-cell>
-                  <s-data-table-cell>{formatINR(referral.orderAmount)}</s-data-table-cell>
-                  <s-data-table-cell>{referral.commissionRate}%</s-data-table-cell>
-                  <s-data-table-cell>{formatINR(referral.commissionAmount)}</s-data-table-cell>
-                  <s-data-table-cell>
-                    {new Date(referral.createdAt).toLocaleDateString("en-IN")}
-                  </s-data-table-cell>
-                </s-data-table-row>
-              ))}
-            </s-data-table-body>
-          </s-data-table>
-        )}
-
-        {/* Pagination */}
-        {hasMore && nextCursor && (
-          <s-stack direction="inline" gap="base" align="center">
-            <s-button
-              onClick={() => {
-                const params = new URLSearchParams(searchParams);
-                params.set("cursor", nextCursor);
-                setSearchParams(params);
-              }}
+        {/* Referrals Table */}
+        <Card padding="0">
+          {referrals.length === 0 ? (
+            <div style={{ padding: "16px" }}>
+              <EmptyState
+                heading="No referrals yet"
+                image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
+              >
+                <p>
+                  Referrals will appear here when customers use affiliate discount codes.
+                </p>
+              </EmptyState>
+            </div>
+          ) : (
+            <IndexTable
+              resourceName={{ singular: "referral", plural: "referrals" }}
+              itemCount={referrals.length}
+              headings={[
+                { title: "Affiliate" },
+                { title: "Code" },
+                { title: "Order ID" },
+                { title: "Order Amount" },
+                { title: "Commission Rate" },
+                { title: "Commission" },
+                { title: "Date" },
+              ]}
+              selectable={false}
             >
-              Load More →
-            </s-button>
-          </s-stack>
-        )}
-      </s-card>
-    </s-page>
+              {rowMarkup}
+            </IndexTable>
+          )}
+
+          {/* Pagination */}
+          {hasMore && nextCursor && (
+            <div style={{ padding: "16px", display: "flex", justifyContent: "center" }}>
+              <InlineStack gap="300" align="center">
+                <Button
+                  onClick={() => {
+                    const params = new URLSearchParams(searchParams);
+                    params.set("cursor", nextCursor);
+                    setSearchParams(params);
+                  }}
+                >
+                  Load More &rarr;
+                </Button>
+              </InlineStack>
+            </div>
+          )}
+        </Card>
+      </BlockStack>
+    </Page>
   );
 }
 

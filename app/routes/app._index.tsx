@@ -96,9 +96,23 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   };
 };
 
+import {
+  Page,
+  Layout,
+  Card,
+  Text,
+  Badge,
+  Banner,
+  IndexTable,
+  EmptyState,
+  Button,
+  InlineStack,
+  BlockStack,
+  Link,
+} from "@shopify/polaris";
+
 export default function Dashboard() {
   const { stats, recentReferrals, shop } = useLoaderData<typeof loader>();
-  const shopify = useAppBridge();
 
   useEffect(() => {
     document.title = "AfflowIndia — Dashboard";
@@ -107,110 +121,129 @@ export default function Dashboard() {
   const formatINR = (amount: number) =>
     `₹${amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
 
+  const rowMarkup = recentReferrals.map((referral, index) => (
+    <IndexTable.Row id={referral.id} key={referral.id} position={index}>
+      <IndexTable.Cell>{referral.affiliateName}</IndexTable.Cell>
+      <IndexTable.Cell>
+        <Badge tone="info">{referral.affiliateCode}</Badge>
+      </IndexTable.Cell>
+      <IndexTable.Cell>{formatINR(referral.orderAmount)}</IndexTable.Cell>
+      <IndexTable.Cell>{formatINR(referral.commissionAmount)}</IndexTable.Cell>
+      <IndexTable.Cell>
+        {new Date(referral.createdAt).toLocaleDateString("en-IN")}
+      </IndexTable.Cell>
+    </IndexTable.Row>
+  ));
+
   return (
-    <s-page heading="Dashboard">
-      <s-badge slot="title-metadata" tone={shop.plan === "FREE" ? "warning" : "success"}>
-        {shop.plan} Plan
-      </s-badge>
-
-      {stats.pendingAffiliates > 0 && (
-        <s-banner tone="warning" dismissible>
-          You have {stats.pendingAffiliates} affiliate{stats.pendingAffiliates > 1 ? "s" : ""} waiting for approval.{" "}
-          <s-link href="/app/affiliates">Review now →</s-link>
-        </s-banner>
-      )}
-
-      {/* Stats Cards */}
-      <s-layout>
-        <s-layout-section variant="oneThird">
-          <s-card>
-            <s-text variant="headingMd">Total Affiliates</s-text>
-            <s-text variant="heading2xl">{stats.totalAffiliates}</s-text>
-            <s-text variant="bodySm" tone="subdued">
-              {stats.activeAffiliates} active · {stats.pendingAffiliates} pending
-            </s-text>
-          </s-card>
-        </s-layout-section>
-
-        <s-layout-section variant="oneThird">
-          <s-card>
-            <s-text variant="headingMd">Total Sales</s-text>
-            <s-text variant="heading2xl">{formatINR(stats.totalSales)}</s-text>
-            <s-text variant="bodySm" tone="subdued">
-              {stats.totalReferrals} referral orders
-            </s-text>
-          </s-card>
-        </s-layout-section>
-
-        <s-layout-section variant="oneThird">
-          <s-card>
-            <s-text variant="headingMd">Pending Commissions</s-text>
-            <s-text variant="heading2xl">{formatINR(stats.pendingCommissions)}</s-text>
-            <s-text variant="bodySm" tone="subdued">
-              {formatINR(stats.totalCommissions)} total earned
-            </s-text>
-          </s-card>
-        </s-layout-section>
-      </s-layout>
-
-      {/* Recent Referrals */}
-      <s-card>
-        <s-text variant="headingMd">Recent Referrals</s-text>
-
-        {recentReferrals.length === 0 ? (
-          <s-empty-state
-            heading="No referrals yet"
-            image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
-          >
-            <s-text>
-              Once your affiliates start sharing their codes and driving sales,
-              you&apos;ll see referral activity here.
-            </s-text>
-          </s-empty-state>
-        ) : (
-          <s-data-table>
-            <s-data-table-head>
-              <s-data-table-header-cell>Affiliate</s-data-table-header-cell>
-              <s-data-table-header-cell>Code</s-data-table-header-cell>
-              <s-data-table-header-cell>Order Amount</s-data-table-header-cell>
-              <s-data-table-header-cell>Commission</s-data-table-header-cell>
-              <s-data-table-header-cell>Date</s-data-table-header-cell>
-            </s-data-table-head>
-            <s-data-table-body>
-              {recentReferrals.map((referral) => (
-                <s-data-table-row key={referral.id}>
-                  <s-data-table-cell>{referral.affiliateName}</s-data-table-cell>
-                  <s-data-table-cell>
-                    <s-badge>{referral.affiliateCode}</s-badge>
-                  </s-data-table-cell>
-                  <s-data-table-cell>{formatINR(referral.orderAmount)}</s-data-table-cell>
-                  <s-data-table-cell>{formatINR(referral.commissionAmount)}</s-data-table-cell>
-                  <s-data-table-cell>
-                    {new Date(referral.createdAt).toLocaleDateString("en-IN")}
-                  </s-data-table-cell>
-                </s-data-table-row>
-              ))}
-            </s-data-table-body>
-          </s-data-table>
+    <Page
+      title="Dashboard"
+      titleMetadata={<Badge tone={shop.plan === "FREE" ? "warning" : "success"}>{`${shop.plan} Plan`}</Badge>}
+    >
+      <BlockStack gap="400">
+        {stats.pendingAffiliates > 0 && (
+          <Banner tone="warning" onDismiss={() => {}}>
+            <p>
+              You have {stats.pendingAffiliates} affiliate{stats.pendingAffiliates > 1 ? "s" : ""} waiting for approval.{" "}
+              <Link url="/app/affiliates">Review now →</Link>
+            </p>
+          </Banner>
         )}
-      </s-card>
 
-      {/* Quick Actions */}
-      <s-card>
-        <s-text variant="headingMd">Quick Actions</s-text>
-        <s-stack direction="inline" gap="base">
-          <s-button href="/app/affiliates" variant="primary">
-            Manage Affiliates
-          </s-button>
-          <s-button href="/app/settings">
-            Settings
-          </s-button>
-          <s-button href="/app/payouts">
-            View Payouts
-          </s-button>
-        </s-stack>
-      </s-card>
-    </s-page>
+        {/* Stats Cards */}
+        <Layout>
+          <Layout.Section variant="oneThird">
+            <Card>
+              <BlockStack gap="200">
+                <Text as="h2" variant="headingMd">Total Affiliates</Text>
+                <Text as="p" variant="heading3xl">{stats.totalAffiliates}</Text>
+                <Text as="p" variant="bodySm" tone="subdued">
+                  {stats.activeAffiliates} active · {stats.pendingAffiliates} pending
+                </Text>
+              </BlockStack>
+            </Card>
+          </Layout.Section>
+
+          <Layout.Section variant="oneThird">
+            <Card>
+              <BlockStack gap="200">
+                <Text as="h2" variant="headingMd">Total Sales</Text>
+                <Text as="p" variant="heading3xl">{formatINR(stats.totalSales)}</Text>
+                <Text as="p" variant="bodySm" tone="subdued">
+                  {stats.totalReferrals} referral orders
+                </Text>
+              </BlockStack>
+            </Card>
+          </Layout.Section>
+
+          <Layout.Section variant="oneThird">
+            <Card>
+              <BlockStack gap="200">
+                <Text as="h2" variant="headingMd">Pending Commissions</Text>
+                <Text as="p" variant="heading3xl">{formatINR(stats.pendingCommissions)}</Text>
+                <Text as="p" variant="bodySm" tone="subdued">
+                  {formatINR(stats.totalCommissions)} total earned
+                </Text>
+              </BlockStack>
+            </Card>
+          </Layout.Section>
+        </Layout>
+
+        {/* Recent Referrals */}
+        <Card padding="0">
+          <div style={{ padding: "16px" }}>
+            <Text as="h2" variant="headingMd">Recent Referrals</Text>
+          </div>
+
+          {recentReferrals.length === 0 ? (
+            <div style={{ padding: "0 16px 16px" }}>
+              <EmptyState
+                heading="No referrals yet"
+                image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
+              >
+                <p>
+                  Once your affiliates start sharing their codes and driving sales,
+                  you&apos;ll see referral activity here.
+                </p>
+              </EmptyState>
+            </div>
+          ) : (
+            <IndexTable
+              resourceName={{ singular: "referral", plural: "referrals" }}
+              itemCount={recentReferrals.length}
+              headings={[
+                { title: "Affiliate" },
+                { title: "Code" },
+                { title: "Order Amount" },
+                { title: "Commission" },
+                { title: "Date" },
+              ]}
+              selectable={false}
+            >
+              {rowMarkup}
+            </IndexTable>
+          )}
+        </Card>
+
+        {/* Quick Actions */}
+        <Card>
+          <BlockStack gap="400">
+            <Text as="h2" variant="headingMd">Quick Actions</Text>
+            <InlineStack gap="300">
+              <Button url="/app/affiliates" variant="primary">
+                Manage Affiliates
+              </Button>
+              <Button url="/app/settings">
+                Settings
+              </Button>
+              <Button url="/app/payouts">
+                View Payouts
+              </Button>
+            </InlineStack>
+          </BlockStack>
+        </Card>
+      </BlockStack>
+    </Page>
   );
 }
 

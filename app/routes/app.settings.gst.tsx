@@ -3,12 +3,21 @@
  */
 import { useState, useEffect } from "react";
 import type { ActionFunctionArgs, HeadersFunction, LoaderFunctionArgs } from "react-router";
-import { useLoaderData, useFetcher } from "react-router";
-import { useAppBridge } from "@shopify/app-bridge-react";
+import { useLoaderData, useFetcher, useNavigate } from "react-router";
 import { authenticate } from "../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import db from "../db.server";
 import { planHasFeature } from "../lib/plan-features.server";
+import {
+  Page,
+  Banner,
+  Button,
+  Card,
+  Checkbox,
+  TextField,
+  Text,
+  BlockStack,
+} from "@shopify/polaris";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
@@ -48,40 +57,78 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 export default function GstSettings() {
   const { isEnabled, gstRate, canUseGst } = useLoaderData<typeof loader>();
   const fetcher = useFetcher<typeof action>();
-  const shopify = useAppBridge();
+  const navigate = useNavigate();
   const [enabled, setEnabled] = useState(isEnabled);
   const [rate, setRate] = useState(gstRate.toString());
 
   useEffect(() => {
     if (fetcher.data) {
       const data = fetcher.data as Record<string, unknown>;
-      if (data.success) shopify.toast.show(data.message as string);
-      if (data.error) shopify.toast.show(data.error as string, { isError: true });
+      // removed shopify toast 
     }
-  }, [fetcher.data, shopify]);
+  }, [fetcher.data]);
 
   if (!canUseGst) {
     return (
-      <s-page heading="GST Settings" backAction={{ url: "/app/settings" }}>
-        <s-banner tone="warning">GST compliance features require the Pro plan. <s-button href="/app/settings/billing" variant="primary">Upgrade</s-button></s-banner>
-      </s-page>
+      <Page
+        title="GST Settings"
+        backAction={{ content: "Settings", onAction: () => navigate("/app/settings") }}
+      >
+        <Banner tone="warning">
+          <p>
+            GST compliance features require the Pro plan.{" "}
+            <Button
+              variant="primary"
+              onClick={() => navigate("/app/settings/billing")}
+            >
+              Upgrade
+            </Button>
+          </p>
+        </Banner>
+      </Page>
     );
   }
 
   return (
-    <s-page heading="GST Settings" backAction={{ url: "/app/settings" }}>
-      <s-button slot="primary-action" variant="primary" onClick={() => {
-        fetcher.submit({ isEnabled: String(enabled), gstRate: rate }, { method: "POST" });
-      }}>Save</s-button>
-      <s-card>
-        <s-text variant="headingMd">GST Compliance</s-text>
-        <s-text tone="subdued">When enabled, GST will be added to affiliate payouts: payoutAmount = commission + (commission × GST rate)</s-text>
-        <s-checkbox checked={enabled ? true : undefined} onChange={(e: CustomEvent) => setEnabled((e.target as HTMLInputElement).checked)}>Enable GST on payouts</s-checkbox>
-        {enabled && (
-          <s-text-field label="GST Rate (%)" type="number" value={rate} min="0" max="100" step="0.5" onInput={(e: CustomEvent) => setRate((e.target as HTMLInputElement).value)} helpText="Default: 18% (standard GST rate in India)" />
-        )}
-      </s-card>
-    </s-page>
+    <Page
+      title="GST Settings"
+      backAction={{ content: "Settings", onAction: () => navigate("/app/settings") }}
+      primaryAction={{
+        content: "Save",
+        onAction: () => fetcher.submit({ isEnabled: String(enabled), gstRate: rate }, { method: "POST" }),
+      }}
+    >
+      <Card>
+        <BlockStack gap="400">
+          <BlockStack gap="100">
+            <Text as="h2" variant="headingMd">GST Compliance</Text>
+            <Text as="p" tone="subdued">
+              When enabled, GST will be added to affiliate payouts: payoutAmount = commission + (commission × GST rate)
+            </Text>
+          </BlockStack>
+          
+          <Checkbox
+            label="Enable GST on payouts"
+            checked={enabled}
+            onChange={(newChecked) => setEnabled(newChecked)}
+          />
+
+          {enabled && (
+            <TextField
+              label="GST Rate (%)"
+              type="number"
+              value={rate}
+              min={0}
+              max={100}
+              step={0.5}
+              onChange={(value) => setRate(value)}
+              helpText="Default: 18% (standard GST rate in India)"
+              autoComplete="off"
+            />
+          )}
+        </BlockStack>
+      </Card>
+    </Page>
   );
 }
 

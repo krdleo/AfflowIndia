@@ -5,6 +5,14 @@ import { AppProvider } from "@shopify/shopify-app-react-router/react";
 
 import { authenticate } from "../shopify.server";
 
+import { NavMenu } from "@shopify/app-bridge-react";
+import { AppProvider as PolarisProvider } from "@shopify/polaris";
+import polarisStyles from "@shopify/polaris/build/esm/styles.css?url";
+
+export const links = () => [
+  { rel: "stylesheet", href: polarisStyles },
+];
+
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   await authenticate.admin(request);
   return { apiKey: process.env.SHOPIFY_API_KEY || "" };
@@ -15,14 +23,16 @@ export default function App() {
 
   return (
     <AppProvider embedded apiKey={apiKey}>
-      <s-app-nav>
-        <s-link href="/app">Dashboard</s-link>
-        <s-link href="/app/affiliates">Affiliates</s-link>
-        <s-link href="/app/referrals">Referral Tracking</s-link>
-        <s-link href="/app/payouts">Payouts</s-link>
-        <s-link href="/app/settings">Settings</s-link>
-      </s-app-nav>
-      <Outlet />
+      <PolarisProvider i18n={{}}>
+        <NavMenu>
+          <a href="/app" rel="home">Dashboard</a>
+          <a href="/app/affiliates">Affiliates</a>
+          <a href="/app/referrals">Referral Tracking</a>
+          <a href="/app/payouts">Payouts</a>
+          <a href="/app/settings">Settings</a>
+        </NavMenu>
+        <Outlet />
+      </PolarisProvider>
     </AppProvider>
   );
 }

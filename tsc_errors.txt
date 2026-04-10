@@ -1,0 +1,237 @@
+app/routes/app._index.tsx(127,21): error TS2322: Type '{ children: string; variant: string; }' is not assignable to type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+  Property 'variant' does not exist on type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+app/routes/app._index.tsx(128,21): error TS2322: Type '{ children: number; variant: string; }' is not assignable to type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+  Property 'variant' does not exist on type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+app/routes/app._index.tsx(129,38): error TS2322: Type '"subdued"' is not assignable to type '"info" | "success" | "warning" | "critical" | "auto" | "neutral" | "caution" | undefined'.
+app/routes/app._index.tsx(137,21): error TS2322: Type '{ children: string; variant: string; }' is not assignable to type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+  Property 'variant' does not exist on type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+app/routes/app._index.tsx(138,21): error TS2322: Type '{ children: string; variant: string; }' is not assignable to type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+  Property 'variant' does not exist on type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+app/routes/app._index.tsx(139,38): error TS2322: Type '"subdued"' is not assignable to type '"info" | "success" | "warning" | "critical" | "auto" | "neutral" | "caution" | undefined'.
+app/routes/app._index.tsx(147,21): error TS2322: Type '{ children: string; variant: string; }' is not assignable to type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+  Property 'variant' does not exist on type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+app/routes/app._index.tsx(148,21): error TS2322: Type '{ children: string; variant: string; }' is not assignable to type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+  Property 'variant' does not exist on type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+app/routes/app._index.tsx(149,38): error TS2322: Type '"subdued"' is not assignable to type '"info" | "success" | "warning" | "critical" | "auto" | "neutral" | "caution" | undefined'.
+app/routes/app._index.tsx(158,17): error TS2322: Type '{ children: string; variant: string; }' is not assignable to type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+  Property 'variant' does not exist on type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+app/routes/app._index.tsx(200,17): error TS2322: Type '{ children: string; variant: string; }' is not assignable to type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+  Property 'variant' does not exist on type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+app/routes/app.affiliates.tsx(330,48): error TS2322: Type '{ children: Element[]; direction: "inline"; gap: "base"; align: string; }' is not assignable to type 'ReactProps$e & ReactBaseElementPropsWithChildren<Stack>'.
+  Property 'align' does not exist on type 'ReactProps$e & ReactBaseElementPropsWithChildren<Stack>'.
+app/routes/app.affiliates.tsx(335,13): error TS2322: Type '(e: CustomEvent) => void' is not assignable to type '(event: CallbackEvent<"s-text-field">) => void'.
+  Types of parameters 'e' and 'event' are incompatible.
+    Type 'Event & { currentTarget: TextField; }' is missing the following properties from type 'CustomEvent<any>': detail, initCustomEvent
+app/routes/app.affiliates.tsx(376,48): error TS2322: Type '"tight"' is not assignable to type 'MaybeResponsive<MaybeTwoValuesShorthandProperty<SpacingKeyword>> | undefined'.
+app/routes/app.affiliates.tsx(377,31): error TS2322: Type '{ children: string; variant: string; fontWeight: string; }' is not assignable to type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+  Property 'variant' does not exist on type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+app/routes/app.affiliates.tsx(378,48): error TS2322: Type '"subdued"' is not assignable to type '"info" | "success" | "warning" | "critical" | "auto" | "neutral" | "caution" | undefined'.
+app/routes/app.affiliates.tsx(401,49): error TS2322: Type '"tight"' is not assignable to type 'MaybeResponsive<MaybeTwoValuesShorthandProperty<SpacingKeyword>> | undefined'.
+app/routes/app.affiliates.tsx(406,29): error TS2322: Type '{ children: string; variant: "primary"; size: string; onClick: () => void; }' is not assignable to type 'ReactProps$Q & ReactBaseElementPropsWithChildren<Button>'.
+  Property 'size' does not exist on type 'ReactProps$Q & ReactBaseElementPropsWithChildren<Button>'.
+app/routes/app.affiliates.tsx(413,29): error TS2322: Type '{ children: string; tone: "critical"; size: string; onClick: () => void; }' is not assignable to type 'ReactProps$Q & ReactBaseElementPropsWithChildren<Button>'.
+  Property 'size' does not exist on type 'ReactProps$Q & ReactBaseElementPropsWithChildren<Button>'.
+app/routes/app.affiliates.tsx(429,27): error TS2322: Type '{ children: string; tone: "critical"; size: string; onClick: () => void; }' is not assignable to type 'ReactProps$Q & ReactBaseElementPropsWithChildren<Button>'.
+  Property 'size' does not exist on type 'ReactProps$Q & ReactBaseElementPropsWithChildren<Button>'.
+app/routes/app.affiliates.tsx(443,27): error TS2322: Type '{ children: string; size: string; onClick: () => void; }' is not assignable to type 'ReactProps$Q & ReactBaseElementPropsWithChildren<Button>'.
+  Property 'size' does not exist on type 'ReactProps$Q & ReactBaseElementPropsWithChildren<Button>'.
+app/routes/app.affiliates.tsx(459,50): error TS2322: Type '{ children: (false | "" | Element | null)[]; direction: "inline"; gap: "base"; align: string; }' is not assignable to type 'ReactProps$e & ReactBaseElementPropsWithChildren<Stack>'.
+  Property 'align' does not exist on type 'ReactProps$e & ReactBaseElementPropsWithChildren<Stack>'.
+app/routes/app.affiliates.tsx(489,11): error TS2322: Type '{ children: Element[]; open: true; heading: string; onClose: () => void; }' is not assignable to type 'Omit<ReactProps$t, "primaryAction" | "secondaryActions"> & ReactBaseElementPropsWithChildren<Modal>'.
+  Property 'open' does not exist on type 'Omit<ReactProps$t, "primaryAction" | "secondaryActions"> & ReactBaseElementPropsWithChildren<Modal>'.
+app/routes/app.payouts.tsx(257,50): error TS2322: Type '"tight"' is not assignable to type 'MaybeResponsive<MaybeTwoValuesShorthandProperty<SpacingKeyword>> | undefined'.
+app/routes/app.payouts.tsx(258,33): error TS2322: Type '{ children: string; fontWeight: string; }' is not assignable to type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+  Property 'fontWeight' does not exist on type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+app/routes/app.payouts.tsx(259,50): error TS2322: Type '"subdued"' is not assignable to type '"info" | "success" | "warning" | "critical" | "auto" | "neutral" | "caution" | undefined'.
+app/routes/app.payouts.tsx(272,31): error TS2322: Type '{ children: string; fontWeight: string; }' is not assignable to type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+  Property 'fontWeight' does not exist on type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+app/routes/app.payouts.tsx(281,51): error TS2322: Type '"tight"' is not assignable to type 'MaybeResponsive<MaybeTwoValuesShorthandProperty<SpacingKeyword>> | undefined'.
+app/routes/app.payouts.tsx(286,31): error TS2322: Type '{ children: string; variant: "primary"; size: string; onClick: () => void; }' is not assignable to type 'ReactProps$Q & ReactBaseElementPropsWithChildren<Button>'.
+  Property 'size' does not exist on type 'ReactProps$Q & ReactBaseElementPropsWithChildren<Button>'.
+app/routes/app.payouts.tsx(293,31): error TS2322: Type '{ children: string; tone: "critical"; size: string; onClick: () => void; }' is not assignable to type 'ReactProps$Q & ReactBaseElementPropsWithChildren<Button>'.
+  Property 'size' does not exist on type 'ReactProps$Q & ReactBaseElementPropsWithChildren<Button>'.
+app/routes/app.payouts.tsx(303,29): error TS2322: Type '{ children: string; variant: "primary"; size: string; onClick: () => void; }' is not assignable to type 'ReactProps$Q & ReactBaseElementPropsWithChildren<Button>'.
+  Property 'size' does not exist on type 'ReactProps$Q & ReactBaseElementPropsWithChildren<Button>'.
+app/routes/app.payouts.tsx(320,50): error TS2322: Type '{ children: Element; direction: "inline"; gap: "base"; align: string; }' is not assignable to type 'ReactProps$e & ReactBaseElementPropsWithChildren<Stack>'.
+  Property 'align' does not exist on type 'ReactProps$e & ReactBaseElementPropsWithChildren<Stack>'.
+app/routes/app.referrals.tsx(100,21): error TS2322: Type '{ children: string; variant: string; }' is not assignable to type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+  Property 'variant' does not exist on type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+app/routes/app.referrals.tsx(101,21): error TS2322: Type '{ children: number; variant: string; }' is not assignable to type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+  Property 'variant' does not exist on type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+app/routes/app.referrals.tsx(106,21): error TS2322: Type '{ children: string; variant: string; }' is not assignable to type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+  Property 'variant' does not exist on type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+app/routes/app.referrals.tsx(107,21): error TS2322: Type '{ children: string; variant: string; }' is not assignable to type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+  Property 'variant' does not exist on type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+app/routes/app.referrals.tsx(112,21): error TS2322: Type '{ children: string; variant: string; }' is not assignable to type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+  Property 'variant' does not exist on type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+app/routes/app.referrals.tsx(113,21): error TS2322: Type '{ children: string; variant: string; }' is not assignable to type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+  Property 'variant' does not exist on type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+app/routes/app.referrals.tsx(144,29): error TS2322: Type '{ children: string; variant: string; fontWeight: string; }' is not assignable to type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+  Property 'variant' does not exist on type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+app/routes/app.referrals.tsx(152,46): error TS2322: Type '"subdued"' is not assignable to type '"info" | "success" | "warning" | "critical" | "auto" | "neutral" | "caution" | undefined'.
+app/routes/app.referrals.tsx(170,50): error TS2322: Type '{ children: Element; direction: "inline"; gap: "base"; align: string; }' is not assignable to type 'ReactProps$e & ReactBaseElementPropsWithChildren<Stack>'.
+  Property 'align' does not exist on type 'ReactProps$e & ReactBaseElementPropsWithChildren<Stack>'.
+app/routes/app.settings.billing.tsx(90,38): error TS2322: Type '{ children: Element[]; heading: string; backAction: { url: string; }; }' is not assignable to type 'Omit<ReactProps$n, "aside" | "primaryAction" | "secondaryActions" | "breadcrumbActions"> & ReactBaseElementPropsWithChildren<Page>'.
+  Property 'backAction' does not exist on type 'Omit<ReactProps$n, "aside" | "primaryAction" | "secondaryActions" | "breadcrumbActions"> & ReactBaseElementPropsWithChildren<Page>'.
+app/routes/app.settings.billing.tsx(101,25): error TS2322: Type '{ children: string; variant: string; }' is not assignable to type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+  Property 'variant' does not exist on type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+app/routes/app.settings.billing.tsx(102,25): error TS2322: Type '{ children: string; variant: string; }' is not assignable to type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+  Property 'variant' does not exist on type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+app/routes/app.settings.billing.tsx(103,25): error TS2322: Type '"subdued"' is not assignable to type '"info" | "success" | "warning" | "critical" | "auto" | "neutral" | "caution" | undefined'.
+app/routes/app.settings.billing.tsx(110,25): error TS2322: Type '{ children: string; variant: string; }' is not assignable to type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+  Property 'variant' does not exist on type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+app/routes/app.settings.billing.tsx(128,21): error TS2322: Type '{ children: string[]; variant: "primary"; fullWidth: true; onClick: () => Promise<void>; }' is not assignable to type 'ReactProps$Q & ReactBaseElementPropsWithChildren<Button>'.
+  Property 'fullWidth' does not exist on type 'ReactProps$Q & ReactBaseElementPropsWithChildren<Button>'.
+app/routes/app.settings.commission.tsx(102,43): error TS2322: Type '{ children: (false | Element)[]; heading: string; backAction: { url: string; }; }' is not assignable to type 'Omit<ReactProps$n, "aside" | "primaryAction" | "secondaryActions" | "breadcrumbActions"> & ReactBaseElementPropsWithChildren<Page>'.
+  Property 'backAction' does not exist on type 'Omit<ReactProps$n, "aside" | "primaryAction" | "secondaryActions" | "breadcrumbActions"> & ReactBaseElementPropsWithChildren<Page>'.
+app/routes/app.settings.commission.tsx(108,17): error TS2322: Type '{ children: string; variant: string; }' is not assignable to type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+  Property 'variant' does not exist on type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+app/routes/app.settings.commission.tsx(113,13): error TS2322: Type '(e: CustomEvent) => void' is not assignable to type '(event: CallbackEvent<"s-choice-list">) => void'.
+  Types of parameters 'e' and 'event' are incompatible.
+    Type 'Event & { currentTarget: ChoiceList; }' is missing the following properties from type 'CustomEvent<any>': detail, initCustomEvent
+app/routes/app.settings.commission.tsx(127,17): error TS2322: Type '{ children: string; variant: string; }' is not assignable to type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+  Property 'variant' does not exist on type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+app/routes/app.settings.commission.tsx(135,11): error TS2322: Type '(e: CustomEvent) => void' is not assignable to type '(event: CallbackEvent<"s-text-field">) => void'.
+  Types of parameters 'e' and 'event' are incompatible.
+    Type 'Event & { currentTarget: TextField; }' is missing the following properties from type 'CustomEvent<any>': detail, initCustomEvent
+app/routes/app.settings.commission.tsx(142,19): error TS2322: Type '{ children: string; variant: string; }' is not assignable to type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+  Property 'variant' does not exist on type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+app/routes/app.settings.commission.tsx(143,19): error TS2322: Type '"subdued"' is not assignable to type '"info" | "success" | "warning" | "critical" | "auto" | "neutral" | "caution" | undefined'.
+app/routes/app.settings.commission.tsx(150,54): error TS2322: Type '{ children: Element[]; direction: "inline"; gap: "base"; align: string; }' is not assignable to type 'ReactProps$e & ReactBaseElementPropsWithChildren<Stack>'.
+  Property 'align' does not exist on type 'ReactProps$e & ReactBaseElementPropsWithChildren<Stack>'.
+app/routes/app.settings.commission.tsx(156,19): error TS2322: Type '(e: CustomEvent) => void' is not assignable to type '(event: CallbackEvent<"s-text-field">) => void'.
+  Types of parameters 'e' and 'event' are incompatible.
+    Type 'Event & { currentTarget: TextField; }' is missing the following properties from type 'CustomEvent<any>': detail, initCustomEvent
+app/routes/app.settings.commission.tsx(167,19): error TS2322: Type '(e: CustomEvent) => void' is not assignable to type '(event: CallbackEvent<"s-text-field">) => void'.
+  Types of parameters 'e' and 'event' are incompatible.
+    Type 'Event & { currentTarget: TextField; }' is missing the following properties from type 'CustomEvent<any>': detail, initCustomEvent
+app/routes/app.settings.gst.tsx(65,38): error TS2322: Type '{ children: Element; heading: string; backAction: { url: string; }; }' is not assignable to type 'Omit<ReactProps$n, "aside" | "primaryAction" | "secondaryActions" | "breadcrumbActions"> & ReactBaseElementPropsWithChildren<Page>'.
+  Property 'backAction' does not exist on type 'Omit<ReactProps$n, "aside" | "primaryAction" | "secondaryActions" | "breadcrumbActions"> & ReactBaseElementPropsWithChildren<Page>'.
+app/routes/app.settings.gst.tsx(72,36): error TS2322: Type '{ children: Element[]; heading: string; backAction: { url: string; }; }' is not assignable to type 'Omit<ReactProps$n, "aside" | "primaryAction" | "secondaryActions" | "breadcrumbActions"> & ReactBaseElementPropsWithChildren<Page>'.
+  Property 'backAction' does not exist on type 'Omit<ReactProps$n, "aside" | "primaryAction" | "secondaryActions" | "breadcrumbActions"> & ReactBaseElementPropsWithChildren<Page>'.
+app/routes/app.settings.gst.tsx(77,17): error TS2322: Type '{ children: string; variant: string; }' is not assignable to type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+  Property 'variant' does not exist on type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+app/routes/app.settings.gst.tsx(78,17): error TS2322: Type '"subdued"' is not assignable to type '"info" | "success" | "warning" | "critical" | "auto" | "neutral" | "caution" | undefined'.
+app/routes/app.settings.gst.tsx(79,58): error TS2322: Type '(e: CustomEvent) => void' is not assignable to type '(event: CallbackEvent<"s-checkbox">) => void'.
+  Types of parameters 'e' and 'event' are incompatible.
+    Type 'Event & { currentTarget: Checkbox; }' is missing the following properties from type 'CustomEvent<any>': detail, initCustomEvent
+app/routes/app.settings.gst.tsx(81,102): error TS2322: Type '(e: CustomEvent) => void' is not assignable to type '(event: CallbackEvent<"s-text-field">) => void'.
+  Types of parameters 'e' and 'event' are incompatible.
+    Type 'Event & { currentTarget: TextField; }' is missing the following properties from type 'CustomEvent<any>': detail, initCustomEvent
+app/routes/app.settings.payout.tsx(75,39): error TS2322: Type '{ children: Element[]; heading: string; backAction: { url: string; }; }' is not assignable to type 'Omit<ReactProps$n, "aside" | "primaryAction" | "secondaryActions" | "breadcrumbActions"> & ReactBaseElementPropsWithChildren<Page>'.
+  Property 'backAction' does not exist on type 'Omit<ReactProps$n, "aside" | "primaryAction" | "secondaryActions" | "breadcrumbActions"> & ReactBaseElementPropsWithChildren<Page>'.
+app/routes/app.settings.payout.tsx(85,19): error TS2322: Type '{ children: string; variant: string; }' is not assignable to type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+  Property 'variant' does not exist on type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+app/routes/app.settings.payout.tsx(89,13): error TS2322: Type '(e: CustomEvent) => void' is not assignable to type '(event: CallbackEvent<"s-choice-list">) => void'.
+  Types of parameters 'e' and 'event' are incompatible.
+    Type 'Event & { currentTarget: ChoiceList; }' is missing the following properties from type 'CustomEvent<any>': detail, initCustomEvent
+app/routes/app.settings.payout.tsx(101,21): error TS2322: Type '{ children: string; variant: string; }' is not assignable to type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+  Property 'variant' does not exist on type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+app/routes/app.settings.payout.tsx(108,71): error TS2322: Type '{ name: string; label: string; type: string; placeholder: string; }' is not assignable to type 'Omit<ReactProps$4, "accessory"> & ReactBaseElementProps<TextField>'.
+  Property 'type' does not exist on type 'Omit<ReactProps$4, "accessory"> & ReactBaseElementProps<TextField>'.
+app/routes/app.settings.portal.tsx(123,46): error TS2322: Type '{ children: Element; heading: string; backAction: { url: string; }; }' is not assignable to type 'Omit<ReactProps$n, "aside" | "primaryAction" | "secondaryActions" | "breadcrumbActions"> & ReactBaseElementPropsWithChildren<Page>'.
+  Property 'backAction' does not exist on type 'Omit<ReactProps$n, "aside" | "primaryAction" | "secondaryActions" | "breadcrumbActions"> & ReactBaseElementPropsWithChildren<Page>'.
+app/routes/app.settings.portal.tsx(135,44): error TS2322: Type '{ children: Element[]; heading: string; backAction: { url: string; }; }' is not assignable to type 'Omit<ReactProps$n, "aside" | "primaryAction" | "secondaryActions" | "breadcrumbActions"> & ReactBaseElementPropsWithChildren<Page>'.
+  Property 'backAction' does not exist on type 'Omit<ReactProps$n, "aside" | "primaryAction" | "secondaryActions" | "breadcrumbActions"> & ReactBaseElementPropsWithChildren<Page>'.
+app/routes/app.settings.portal.tsx(142,17): error TS2322: Type '{ children: string; variant: string; }' is not assignable to type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+  Property 'variant' does not exist on type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+app/routes/app.settings.portal.tsx(143,69): error TS2322: Type '(e: CustomEvent) => void' is not assignable to type '(event: CallbackEvent<"s-text-field">) => void'.
+  Types of parameters 'e' and 'event' are incompatible.
+    Type 'Event & { currentTarget: TextField; }' is missing the following properties from type 'CustomEvent<any>': detail, initCustomEvent
+app/routes/app.settings.portal.tsx(144,61): error TS2322: Type '(e: CustomEvent) => void' is not assignable to type '(event: CallbackEvent<"s-text-field">) => void'.
+  Types of parameters 'e' and 'event' are incompatible.
+    Type 'Event & { currentTarget: TextField; }' is missing the following properties from type 'CustomEvent<any>': detail, initCustomEvent
+app/routes/app.settings.portal.tsx(145,65): error TS2322: Type '(e: CustomEvent) => void' is not assignable to type '(event: CallbackEvent<"s-text-field">) => void'.
+  Types of parameters 'e' and 'event' are incompatible.
+    Type 'Event & { currentTarget: TextField; }' is missing the following properties from type 'CustomEvent<any>': detail, initCustomEvent
+app/routes/app.settings.portal.tsx(146,71): error TS2322: Type '(e: CustomEvent) => void' is not assignable to type '(event: CallbackEvent<"s-text-field">) => void'.
+  Types of parameters 'e' and 'event' are incompatible.
+    Type 'Event & { currentTarget: TextField; }' is missing the following properties from type 'CustomEvent<any>': detail, initCustomEvent
+app/routes/app.settings.portal.tsx(147,69): error TS2322: Type '(e: CustomEvent) => void' is not assignable to type '(event: CallbackEvent<"s-text-field">) => void'.
+  Types of parameters 'e' and 'event' are incompatible.
+    Type 'Event & { currentTarget: TextField; }' is missing the following properties from type 'CustomEvent<any>': detail, initCustomEvent
+app/routes/app.settings.portal.tsx(152,17): error TS2322: Type '{ children: string; variant: string; }' is not assignable to type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+  Property 'variant' does not exist on type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+app/routes/app.settings.portal.tsx(153,75): error TS2322: Type '(e: CustomEvent) => void' is not assignable to type '(event: CallbackEvent<"s-text-field">) => void'.
+  Types of parameters 'e' and 'event' are incompatible.
+    Type 'Event & { currentTarget: TextField; }' is missing the following properties from type 'CustomEvent<any>': detail, initCustomEvent
+app/routes/app.settings.portal.tsx(154,75): error TS2322: Type '(e: CustomEvent) => void' is not assignable to type '(event: CallbackEvent<"s-text-field">) => void'.
+  Types of parameters 'e' and 'event' are incompatible.
+    Type 'Event & { currentTarget: TextField; }' is missing the following properties from type 'CustomEvent<any>': detail, initCustomEvent
+app/routes/app.settings.portal.tsx(155,73): error TS2322: Type '(e: CustomEvent) => void' is not assignable to type '(event: CallbackEvent<"s-text-field">) => void'.
+  Types of parameters 'e' and 'event' are incompatible.
+    Type 'Event & { currentTarget: TextField; }' is missing the following properties from type 'CustomEvent<any>': detail, initCustomEvent
+app/routes/app.settings.portal.tsx(160,17): error TS2322: Type '{ children: string; variant: string; }' is not assignable to type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+  Property 'variant' does not exist on type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+app/routes/app.settings.portal.tsx(161,70): error TS2322: Type '(e: CustomEvent) => void' is not assignable to type '(event: CallbackEvent<"s-checkbox">) => void'.
+  Types of parameters 'e' and 'event' are incompatible.
+    Type 'Event & { currentTarget: Checkbox; }' is missing the following properties from type 'CustomEvent<any>': detail, initCustomEvent
+app/routes/app.settings.portal.tsx(164,71): error TS2322: Type '(e: CustomEvent) => void' is not assignable to type '(event: CallbackEvent<"s-checkbox">) => void'.
+  Types of parameters 'e' and 'event' are incompatible.
+    Type 'Event & { currentTarget: Checkbox; }' is missing the following properties from type 'CustomEvent<any>': detail, initCustomEvent
+app/routes/app.settings.portal.tsx(171,17): error TS2322: Type '{ children: string; variant: string; }' is not assignable to type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+  Property 'variant' does not exist on type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+app/routes/app.settings.portal.tsx(172,17): error TS2322: Type '"subdued"' is not assignable to type '"info" | "success" | "warning" | "critical" | "auto" | "neutral" | "caution" | undefined'.
+app/routes/app.settings.portal.tsx(173,65): error TS2322: Type '(e: CustomEvent) => void' is not assignable to type '(event: CallbackEvent<"s-checkbox">) => void'.
+  Types of parameters 'e' and 'event' are incompatible.
+    Type 'Event & { currentTarget: Checkbox; }' is missing the following properties from type 'CustomEvent<any>': detail, initCustomEvent
+app/routes/app.settings.portal.tsx(174,63): error TS2322: Type '(e: CustomEvent) => void' is not assignable to type '(event: CallbackEvent<"s-checkbox">) => void'.
+  Types of parameters 'e' and 'event' are incompatible.
+    Type 'Event & { currentTarget: Checkbox; }' is missing the following properties from type 'CustomEvent<any>': detail, initCustomEvent
+app/routes/app.settings.portal.tsx(175,63): error TS2322: Type '(e: CustomEvent) => void' is not assignable to type '(event: CallbackEvent<"s-checkbox">) => void'.
+  Types of parameters 'e' and 'event' are incompatible.
+    Type 'Event & { currentTarget: Checkbox; }' is missing the following properties from type 'CustomEvent<any>': detail, initCustomEvent
+app/routes/app.settings.portal.tsx(176,65): error TS2322: Type '(e: CustomEvent) => void' is not assignable to type '(event: CallbackEvent<"s-checkbox">) => void'.
+  Types of parameters 'e' and 'event' are incompatible.
+    Type 'Event & { currentTarget: Checkbox; }' is missing the following properties from type 'CustomEvent<any>': detail, initCustomEvent
+app/routes/app.settings.tds.tsx(68,38): error TS2322: Type '{ children: Element; heading: string; backAction: { url: string; }; }' is not assignable to type 'Omit<ReactProps$n, "aside" | "primaryAction" | "secondaryActions" | "breadcrumbActions"> & ReactBaseElementPropsWithChildren<Page>'.
+  Property 'backAction' does not exist on type 'Omit<ReactProps$n, "aside" | "primaryAction" | "secondaryActions" | "breadcrumbActions"> & ReactBaseElementPropsWithChildren<Page>'.
+app/routes/app.settings.tds.tsx(75,36): error TS2322: Type '{ children: Element[]; heading: string; backAction: { url: string; }; }' is not assignable to type 'Omit<ReactProps$n, "aside" | "primaryAction" | "secondaryActions" | "breadcrumbActions"> & ReactBaseElementPropsWithChildren<Page>'.
+  Property 'backAction' does not exist on type 'Omit<ReactProps$n, "aside" | "primaryAction" | "secondaryActions" | "breadcrumbActions"> & ReactBaseElementPropsWithChildren<Page>'.
+app/routes/app.settings.tds.tsx(81,17): error TS2322: Type '{ children: string; variant: string; }' is not assignable to type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+  Property 'variant' does not exist on type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+app/routes/app.settings.tds.tsx(82,17): error TS2322: Type '"subdued"' is not assignable to type '"info" | "success" | "warning" | "critical" | "auto" | "neutral" | "caution" | undefined'.
+app/routes/app.settings.tds.tsx(83,58): error TS2322: Type '(e: CustomEvent) => void' is not assignable to type '(event: CallbackEvent<"s-checkbox">) => void'.
+  Types of parameters 'e' and 'event' are incompatible.
+    Type 'Event & { currentTarget: Checkbox; }' is missing the following properties from type 'CustomEvent<any>': detail, initCustomEvent
+app/routes/app.settings.tds.tsx(86,104): error TS2322: Type '(e: CustomEvent) => void' is not assignable to type '(event: CallbackEvent<"s-text-field">) => void'.
+  Types of parameters 'e' and 'event' are incompatible.
+    Type 'Event & { currentTarget: TextField; }' is missing the following properties from type 'CustomEvent<any>': detail, initCustomEvent
+app/routes/app.settings.tds.tsx(87,96): error TS2322: Type '(e: CustomEvent) => void' is not assignable to type '(event: CallbackEvent<"s-text-field">) => void'.
+  Types of parameters 'e' and 'event' are incompatible.
+    Type 'Event & { currentTarget: TextField; }' is missing the following properties from type 'CustomEvent<any>': detail, initCustomEvent
+app/routes/app.settings.tsx(49,52): error TS2322: Type '{ children: Element[]; direction: "inline"; gap: "base"; align: string; }' is not assignable to type 'ReactProps$e & ReactBaseElementPropsWithChildren<Stack>'.
+  Property 'align' does not exist on type 'ReactProps$e & ReactBaseElementPropsWithChildren<Stack>'.
+app/routes/app.settings.tsx(50,42): error TS2322: Type '"tight"' is not assignable to type 'MaybeResponsive<MaybeTwoValuesShorthandProperty<SpacingKeyword>> | undefined'.
+app/routes/app.settings.tsx(51,25): error TS2322: Type '{ children: string; variant: string; }' is not assignable to type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+  Property 'variant' does not exist on type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+app/routes/app.settings.tsx(52,25): error TS2322: Type '"subdued"' is not assignable to type '"info" | "success" | "warning" | "critical" | "auto" | "neutral" | "caution" | undefined'.
+app/routes/app.settings.tsx(62,52): error TS2322: Type '{ children: Element[]; direction: "inline"; gap: "base"; align: string; }' is not assignable to type 'ReactProps$e & ReactBaseElementPropsWithChildren<Stack>'.
+  Property 'align' does not exist on type 'ReactProps$e & ReactBaseElementPropsWithChildren<Stack>'.
+app/routes/app.settings.tsx(63,42): error TS2322: Type '"tight"' is not assignable to type 'MaybeResponsive<MaybeTwoValuesShorthandProperty<SpacingKeyword>> | undefined'.
+app/routes/app.settings.tsx(64,25): error TS2322: Type '{ children: string; variant: string; }' is not assignable to type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+  Property 'variant' does not exist on type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+app/routes/app.settings.tsx(65,25): error TS2322: Type '"subdued"' is not assignable to type '"info" | "success" | "warning" | "critical" | "auto" | "neutral" | "caution" | undefined'.
+app/routes/app.settings.tsx(75,52): error TS2322: Type '{ children: Element[]; direction: "inline"; gap: "base"; align: string; }' is not assignable to type 'ReactProps$e & ReactBaseElementPropsWithChildren<Stack>'.
+  Property 'align' does not exist on type 'ReactProps$e & ReactBaseElementPropsWithChildren<Stack>'.
+app/routes/app.settings.tsx(76,42): error TS2322: Type '"tight"' is not assignable to type 'MaybeResponsive<MaybeTwoValuesShorthandProperty<SpacingKeyword>> | undefined'.
+app/routes/app.settings.tsx(77,25): error TS2322: Type '{ children: string; variant: string; }' is not assignable to type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+  Property 'variant' does not exist on type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+app/routes/app.settings.tsx(78,25): error TS2322: Type '"subdued"' is not assignable to type '"info" | "success" | "warning" | "critical" | "auto" | "neutral" | "caution" | undefined'.
+app/routes/app.settings.tsx(88,52): error TS2322: Type '{ children: Element[]; direction: "inline"; gap: "base"; align: string; }' is not assignable to type 'ReactProps$e & ReactBaseElementPropsWithChildren<Stack>'.
+  Property 'align' does not exist on type 'ReactProps$e & ReactBaseElementPropsWithChildren<Stack>'.
+app/routes/app.settings.tsx(89,42): error TS2322: Type '"tight"' is not assignable to type 'MaybeResponsive<MaybeTwoValuesShorthandProperty<SpacingKeyword>> | undefined'.
+app/routes/app.settings.tsx(90,25): error TS2322: Type '{ children: string; variant: string; }' is not assignable to type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+  Property 'variant' does not exist on type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+app/routes/app.settings.tsx(91,25): error TS2322: Type '"subdued"' is not assignable to type '"info" | "success" | "warning" | "critical" | "auto" | "neutral" | "caution" | undefined'.
+app/routes/app.settings.tsx(101,52): error TS2322: Type '{ children: Element[]; direction: "inline"; gap: "base"; align: string; }' is not assignable to type 'ReactProps$e & ReactBaseElementPropsWithChildren<Stack>'.
+  Property 'align' does not exist on type 'ReactProps$e & ReactBaseElementPropsWithChildren<Stack>'.
+app/routes/app.settings.tsx(102,42): error TS2322: Type '"tight"' is not assignable to type 'MaybeResponsive<MaybeTwoValuesShorthandProperty<SpacingKeyword>> | undefined'.
+app/routes/app.settings.tsx(103,25): error TS2322: Type '{ children: string; variant: string; }' is not assignable to type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+  Property 'variant' does not exist on type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+app/routes/app.settings.tsx(104,25): error TS2322: Type '"subdued"' is not assignable to type '"info" | "success" | "warning" | "critical" | "auto" | "neutral" | "caution" | undefined'.
+app/routes/app.settings.tsx(114,52): error TS2322: Type '{ children: Element[]; direction: "inline"; gap: "base"; align: string; }' is not assignable to type 'ReactProps$e & ReactBaseElementPropsWithChildren<Stack>'.
+  Property 'align' does not exist on type 'ReactProps$e & ReactBaseElementPropsWithChildren<Stack>'.
+app/routes/app.settings.tsx(115,42): error TS2322: Type '"tight"' is not assignable to type 'MaybeResponsive<MaybeTwoValuesShorthandProperty<SpacingKeyword>> | undefined'.
+app/routes/app.settings.tsx(116,25): error TS2322: Type '{ children: string; variant: string; }' is not assignable to type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.
+  Property 'variant' does not exist on type 'ReactProps$6 & ReactBaseElementPropsWithChildren<Text>'.

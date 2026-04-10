@@ -13,12 +13,26 @@ import type {
   HeadersFunction,
   LoaderFunctionArgs,
 } from "react-router";
-import { useLoaderData, useFetcher, useSearchParams } from "react-router";
-import { useAppBridge } from "@shopify/app-bridge-react";
+import { useLoaderData, useFetcher, useSearchParams, useNavigate } from "react-router";
 import { authenticate } from "../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import db from "../db.server";
 import { checkAffiliateLimit, PLAN_CONFIGS } from "../lib/billing.server";
+import {
+  Page,
+  Badge,
+  Banner,
+  Tabs,
+  Card,
+  TextField,
+  Button,
+  InlineStack,
+  BlockStack,
+  EmptyState,
+  IndexTable,
+  Text,
+  Modal,
+} from "@shopify/polaris";
 
 const PAGE_SIZE = 20;
 
@@ -230,7 +244,6 @@ export default function Affiliates() {
     useLoaderData<typeof loader>();
   const [searchParams, setSearchParams] = useSearchParams();
   const fetcher = useFetcher<typeof action>();
-  const shopify = useAppBridge();
 
   const currentStatus = searchParams.get("status") || "ALL";
   const currentSearch = searchParams.get("search") || "";
@@ -242,7 +255,6 @@ export default function Affiliates() {
     name: string;
   } | null>(null);
 
-  // Show toast on action complete
   useEffect(() => {
     if (fetcher.data) {
       const data = fetcher.data as Record<string, unknown>;
@@ -252,7 +264,7 @@ export default function Affiliates() {
         shopify.toast.show(data.error as string, { isError: true });
       }
     }
-  }, [fetcher.data, shopify]);
+  }, [fetcher.data]);
 
   const handleSearch = useCallback(() => {
     const params = new URLSearchParams(searchParams);
@@ -290,227 +302,223 @@ export default function Affiliates() {
     `₹${amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
 
   const tabs = [
-    { id: "ALL", label: `All (${statusCounts.all})` },
-    { id: "PENDING", label: `Pending (${statusCounts.pending})` },
-    { id: "ACTIVE", label: `Active (${statusCounts.active})` },
-    { id: "SUSPENDED", label: `Suspended (${statusCounts.suspended})` },
+    { id: "ALL", content: `All (${statusCounts.all})` },
+    { id: "PENDING", content: `Pending (${statusCounts.pending})` },
+    { id: "ACTIVE", content: `Active (${statusCounts.active})` },
+    { id: "SUSPENDED", content: `Suspended (${statusCounts.suspended})` },
   ];
+  const selectedTab = Math.max(tabs.findIndex(t => t.id === currentStatus), 0);
+
+  const rowMarkup = affiliates.map((affiliate, index) => (
+    <IndexTable.Row key={affiliate.id} id={affiliate.id} position={index}>
+      <IndexTable.Cell>
+        <BlockStack gap="0">
+          <Text as="span" variant="bodyMd" fontWeight="bold">{affiliate.name}</Text>
+          <Text as="span" variant="bodySm" tone="subdued">{affiliate.email}</Text>
+        </BlockStack>
+      </IndexTable.Cell>
+      <IndexTable.Cell>
+        <Badge>{affiliate.code}</Badge>
+      </IndexTable.Cell>
+      <IndexTable.Cell>
+        <Badge
+          tone={
+            affiliate.status === "ACTIVE"
+              ? "success"
+              : affiliate.status === "PENDING"
+              ? "warning"
+              : "critical"
+          }
+        >
+          {affiliate.status}
+        </Badge>
+      </IndexTable.Cell>
+      <IndexTable.Cell>{affiliate.totalClicks}</IndexTable.Cell>
+      <IndexTable.Cell>{formatINR(affiliate.totalSales)}</IndexTable.Cell>
+      <IndexTable.Cell>{formatINR(affiliate.pendingCommission)}</IndexTable.Cell>
+      <IndexTable.Cell>
+        <InlineStack gap="200">
+          {affiliate.status === "PENDING" && (
+            <>
+              <Button
+                variant="primary"
+                size="micro"
+                onClick={() => handleAction("approve", affiliate.id)}
+              >
+                Approve
+              </Button>
+              <Button
+                tone="critical"
+                size="micro"
+                onClick={() =>
+                  setConfirmAction({
+                    type: "reject",
+                    affiliateId: affiliate.id,
+                    name: affiliate.name,
+                  })
+                }
+              >
+                Reject
+              </Button>
+            </>
+          )}
+          {affiliate.status === "ACTIVE" && (
+            <Button
+              tone="critical"
+              size="micro"
+              onClick={() =>
+                setConfirmAction({
+                  type: "suspend",
+                  affiliateId: affiliate.id,
+                  name: affiliate.name,
+                })
+              }
+            >
+              Suspend
+            </Button>
+          )}
+          {affiliate.status === "SUSPENDED" && (
+            <Button
+              size="micro"
+              onClick={() => handleAction("reactivate", affiliate.id)}
+            >
+              Reactivate
+            </Button>
+          )}
+        </InlineStack>
+      </IndexTable.Cell>
+    </IndexTable.Row>
+  ));
 
   return (
-    <s-page heading="Affiliates">
-      <s-badge slot="title-metadata">{totalCount} total</s-badge>
-
-      {/* Limit warning */}
-      {!limitInfo.allowed && (
-        <s-banner tone="critical">
-          You&apos;ve reached the affiliate limit ({limitInfo.limit}) for the {limitInfo.planName} plan.
-          Upgrade to add more affiliates.
-          <s-button href="/app/settings/billing" variant="primary">
-            Upgrade Plan
-          </s-button>
-        </s-banner>
-      )}
-
-      {/* Tabs */}
-      <s-tabs>
-        {tabs.map((tab) => (
-          <s-tab
-            key={tab.id}
-            id={tab.id}
-            selected={currentStatus === tab.id ? true : undefined}
-            onClick={() => handleTabChange(tab.id)}
-          >
-            {tab.label}
-          </s-tab>
-        ))}
-      </s-tabs>
-
-      {/* Search */}
-      <s-card>
-        <s-stack direction="inline" gap="base" align="end">
-          <s-text-field
-            label="Search affiliates"
-            value={searchValue}
-            placeholder="Search by name, email, or code..."
-            onInput={(e: CustomEvent) => setSearchValue((e.target as HTMLInputElement).value)}
-            onKeyDown={(e: KeyboardEvent) => {
-              if (e.key === "Enter") handleSearch();
-            }}
-          />
-          <s-button onClick={handleSearch}>Search</s-button>
-        </s-stack>
-      </s-card>
-
-      {/* Affiliate List */}
-      <s-card>
-        {affiliates.length === 0 ? (
-          <s-empty-state
-            heading={
-              currentSearch
-                ? "No affiliates match your search"
-                : "No affiliates yet"
-            }
-            image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
-          >
-            <s-text>
-              {currentSearch
-                ? "Try a different search term."
-                : "Share your affiliate portal link to start recruiting affiliates."}
-            </s-text>
-          </s-empty-state>
-        ) : (
-          <s-data-table>
-            <s-data-table-head>
-              <s-data-table-header-cell>Name</s-data-table-header-cell>
-              <s-data-table-header-cell>Code</s-data-table-header-cell>
-              <s-data-table-header-cell>Status</s-data-table-header-cell>
-              <s-data-table-header-cell>Clicks</s-data-table-header-cell>
-              <s-data-table-header-cell>Sales</s-data-table-header-cell>
-              <s-data-table-header-cell>Pending</s-data-table-header-cell>
-              <s-data-table-header-cell>Actions</s-data-table-header-cell>
-            </s-data-table-head>
-            <s-data-table-body>
-              {affiliates.map((affiliate) => (
-                <s-data-table-row key={affiliate.id}>
-                  <s-data-table-cell>
-                    <s-stack direction="block" gap="tight">
-                      <s-text variant="bodyMd" fontWeight="semibold">{affiliate.name}</s-text>
-                      <s-text variant="bodySm" tone="subdued">{affiliate.email}</s-text>
-                    </s-stack>
-                  </s-data-table-cell>
-                  <s-data-table-cell>
-                    <s-badge>{affiliate.code}</s-badge>
-                  </s-data-table-cell>
-                  <s-data-table-cell>
-                    <s-badge
-                      tone={
-                        affiliate.status === "ACTIVE"
-                          ? "success"
-                          : affiliate.status === "PENDING"
-                          ? "warning"
-                          : "critical"
-                      }
-                    >
-                      {affiliate.status}
-                    </s-badge>
-                  </s-data-table-cell>
-                  <s-data-table-cell>{affiliate.totalClicks}</s-data-table-cell>
-                  <s-data-table-cell>{formatINR(affiliate.totalSales)}</s-data-table-cell>
-                  <s-data-table-cell>{formatINR(affiliate.pendingCommission)}</s-data-table-cell>
-                  <s-data-table-cell>
-                    <s-stack direction="inline" gap="tight">
-                      {affiliate.status === "PENDING" && (
-                        <>
-                          <s-button
-                            variant="primary"
-                            size="slim"
-                            onClick={() => handleAction("approve", affiliate.id)}
-                          >
-                            Approve
-                          </s-button>
-                          <s-button
-                            tone="critical"
-                            size="slim"
-                            onClick={() =>
-                              setConfirmAction({
-                                type: "reject",
-                                affiliateId: affiliate.id,
-                                name: affiliate.name,
-                              })
-                            }
-                          >
-                            Reject
-                          </s-button>
-                        </>
-                      )}
-                      {affiliate.status === "ACTIVE" && (
-                        <s-button
-                          tone="critical"
-                          size="slim"
-                          onClick={() =>
-                            setConfirmAction({
-                              type: "suspend",
-                              affiliateId: affiliate.id,
-                              name: affiliate.name,
-                            })
-                          }
-                        >
-                          Suspend
-                        </s-button>
-                      )}
-                      {affiliate.status === "SUSPENDED" && (
-                        <s-button
-                          size="slim"
-                          onClick={() => handleAction("reactivate", affiliate.id)}
-                        >
-                          Reactivate
-                        </s-button>
-                      )}
-                    </s-stack>
-                  </s-data-table-cell>
-                </s-data-table-row>
-              ))}
-            </s-data-table-body>
-          </s-data-table>
+    <Page
+      title="Affiliates"
+      titleMetadata={<Badge>{`${totalCount} total`}</Badge>}
+    >
+      <BlockStack gap="400">
+        {/* Limit warning */}
+        {!limitInfo.allowed && (
+          <Banner tone="critical" action={{content: "Upgrade Plan", url: "/app/settings/billing"}}>
+            <p>
+              You&apos;ve reached the affiliate limit ({limitInfo.limit}) for the {limitInfo.planName} plan.
+              Upgrade to add more affiliates.
+            </p>
+          </Banner>
         )}
 
-        {/* Pagination */}
-        {(hasMore || searchParams.has("cursor")) && (
-          <s-stack direction="inline" gap="base" align="center">
-            {searchParams.has("cursor") && (
-              <s-button
-                onClick={() => {
-                  const params = new URLSearchParams(searchParams);
-                  params.delete("cursor");
-                  setSearchParams(params);
-                }}
+        <Card padding="0">
+          <Tabs tabs={tabs} selected={selectedTab} onSelect={(index) => handleTabChange(tabs[index].id)} />
+
+          <div style={{ padding: "16px" }}>
+            <form onSubmit={(e) => { e.preventDefault(); handleSearch(); }}>
+              <InlineStack gap="300" align="start">
+                <TextField
+                  label="Search affiliates"
+                  labelHidden
+                  value={searchValue}
+                  placeholder="Search by name, email, or code..."
+                  onChange={(val) => setSearchValue(val)}
+                  autoComplete="off"
+                />
+                <Button submit>Search</Button>
+              </InlineStack>
+            </form>
+          </div>
+
+          {affiliates.length === 0 ? (
+            <div style={{ padding: "16px" }}>
+              <EmptyState
+                heading={
+                  currentSearch
+                    ? "No affiliates match your search"
+                    : "No affiliates yet"
+                }
+                image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
               >
-                ← Previous
-              </s-button>
-            )}
-            {hasMore && nextCursor && (
-              <s-button
-                onClick={() => {
-                  const params = new URLSearchParams(searchParams);
-                  params.set("cursor", nextCursor);
-                  setSearchParams(params);
-                }}
-              >
-                Next →
-              </s-button>
-            )}
-          </s-stack>
-        )}
-      </s-card>
+                <p>
+                  {currentSearch
+                    ? "Try a different search term."
+                    : "Share your affiliate portal link to start recruiting affiliates."}
+                </p>
+              </EmptyState>
+            </div>
+          ) : (
+            <IndexTable
+              resourceName={{ singular: "affiliate", plural: "affiliates" }}
+              itemCount={affiliates.length}
+              headings={[
+                { title: "Name" },
+                { title: "Code" },
+                { title: "Status" },
+                { title: "Clicks" },
+                { title: "Sales" },
+                { title: "Pending" },
+                { title: "Actions" },
+              ]}
+              selectable={false}
+            >
+              {rowMarkup}
+            </IndexTable>
+          )}
+
+          {/* Pagination */}
+          {(hasMore || searchParams.has("cursor")) && (
+            <div style={{ padding: "16px", display: "flex", justifyContent: "center" }}>
+              <InlineStack gap="300" align="center">
+                {searchParams.has("cursor") && (
+                  <Button
+                    onClick={() => {
+                      const params = new URLSearchParams(searchParams);
+                      params.delete("cursor");
+                      setSearchParams(params);
+                    }}
+                  >
+                    &larr; Previous
+                  </Button>
+                )}
+                {hasMore && nextCursor && (
+                  <Button
+                    onClick={() => {
+                      const params = new URLSearchParams(searchParams);
+                      params.set("cursor", nextCursor);
+                      setSearchParams(params);
+                    }}
+                  >
+                    Next &rarr;
+                  </Button>
+                )}
+              </InlineStack>
+            </div>
+          )}
+        </Card>
+      </BlockStack>
 
       {/* Confirmation Modal */}
       {confirmAction && (
-        <s-modal
-          open
-          heading={`${confirmAction.type === "suspend" ? "Suspend" : "Reject"} ${confirmAction.name}?`}
+        <Modal
+          open={!!confirmAction}
           onClose={() => setConfirmAction(null)}
+          title={`${confirmAction.type === "suspend" ? "Suspend" : "Reject"} ${confirmAction.name}?`}
+          primaryAction={{
+            content: confirmAction.type === "suspend" ? "Suspend" : "Reject",
+            destructive: true,
+            onAction: () => handleAction(confirmAction.type, confirmAction.affiliateId)
+          }}
+          secondaryActions={[
+            { content: "Cancel", onAction: () => setConfirmAction(null) }
+          ]}
         >
-          <s-text>
-            Are you sure you want to {confirmAction.type} {confirmAction.name}?
-            {confirmAction.type === "suspend"
-              ? " Their discount code will be deactivated."
-              : " They will not be able to use the affiliate portal."}
-          </s-text>
-          <s-stack direction="inline" gap="base" slot="footer">
-            <s-button onClick={() => setConfirmAction(null)}>Cancel</s-button>
-            <s-button
-              variant="primary"
-              tone="critical"
-              onClick={() =>
-                handleAction(confirmAction.type, confirmAction.affiliateId)
-              }
-            >
-              {confirmAction.type === "suspend" ? "Suspend" : "Reject"}
-            </s-button>
-          </s-stack>
-        </s-modal>
+          <Modal.Section>
+            <Text as="p">
+              Are you sure you want to {confirmAction.type} {confirmAction.name}?
+              {confirmAction.type === "suspend"
+                ? " Their discount code will be deactivated."
+                : " They will not be able to use the affiliate portal."}
+            </Text>
+          </Modal.Section>
+        </Modal>
       )}
-    </s-page>
+    </Page>
   );
 }
 

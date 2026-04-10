@@ -13,11 +13,22 @@ import type {
   HeadersFunction,
   LoaderFunctionArgs,
 } from "react-router";
-import { useLoaderData, useFetcher, useSearchParams } from "react-router";
-import { useAppBridge } from "@shopify/app-bridge-react";
+import { useLoaderData, useFetcher, useSearchParams, useNavigate } from "react-router";
 import { authenticate } from "../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import db from "../db.server";
+import {
+  Page,
+  Badge,
+  Tabs,
+  Card,
+  EmptyState,
+  IndexTable,
+  Text,
+  Button,
+  InlineStack,
+  BlockStack,
+} from "@shopify/polaris";
 
 const PAGE_SIZE = 20;
 
@@ -157,7 +168,6 @@ export default function Payouts() {
     useLoaderData<typeof loader>();
   const [searchParams, setSearchParams] = useSearchParams();
   const fetcher = useFetcher<typeof action>();
-  const shopify = useAppBridge();
 
   const currentStatus = searchParams.get("status") || "ALL";
 
@@ -170,7 +180,7 @@ export default function Payouts() {
         shopify.toast.show(data.error as string, { isError: true });
       }
     }
-  }, [fetcher.data, shopify]);
+  }, [fetcher.data]);
 
   const handleAction = useCallback(
     (type: string, payoutId: string) => {
@@ -193,144 +203,152 @@ export default function Payouts() {
   };
 
   const tabs = [
-    { id: "ALL", label: `All (${statusCounts.all})` },
-    { id: "PENDING", label: `Pending (${statusCounts.pending})` },
-    { id: "APPROVED", label: `Approved (${statusCounts.approved})` },
-    { id: "PAID", label: `Paid (${statusCounts.paid})` },
-    { id: "FAILED", label: `Failed (${statusCounts.failed})` },
+    { id: "ALL", content: `All (${statusCounts.all})` },
+    { id: "PENDING", content: `Pending (${statusCounts.pending})` },
+    { id: "APPROVED", content: `Approved (${statusCounts.approved})` },
+    { id: "PAID", content: `Paid (${statusCounts.paid})` },
+    { id: "FAILED", content: `Failed (${statusCounts.failed})` },
   ];
+  const selectedTab = Math.max(tabs.findIndex(t => t.id === currentStatus), 0);
+
+  const rowMarkup = payouts.map((payout, index) => {
+    const netAmount = payout.baseAmount + payout.gstAmount - payout.tdsAmount;
+    return (
+      <IndexTable.Row key={payout.id} id={payout.id} position={index}>
+        <IndexTable.Cell>
+          <BlockStack gap="0">
+            <Text as="span" variant="bodyMd" fontWeight="semibold">{payout.affiliateName}</Text>
+            <Text as="span" variant="bodySm" tone="subdued">
+              {payout.affiliateUpi || payout.affiliateEmail}
+            </Text>
+          </BlockStack>
+        </IndexTable.Cell>
+        <IndexTable.Cell>{formatINR(payout.baseAmount)}</IndexTable.Cell>
+        <IndexTable.Cell>
+          {payout.gstAmount > 0 ? `+${formatINR(payout.gstAmount)}` : "—"}
+        </IndexTable.Cell>
+        <IndexTable.Cell>
+          {payout.tdsAmount > 0 ? `-${formatINR(payout.tdsAmount)}` : "—"}
+        </IndexTable.Cell>
+        <IndexTable.Cell>
+          <Text as="span" fontWeight="semibold">{formatINR(netAmount)}</Text>
+        </IndexTable.Cell>
+        <IndexTable.Cell>
+          <Badge tone={statusTone(payout.status)}>{payout.status}</Badge>
+        </IndexTable.Cell>
+        <IndexTable.Cell>
+          {new Date(payout.createdAt).toLocaleDateString("en-IN")}
+        </IndexTable.Cell>
+        <IndexTable.Cell>
+          <InlineStack gap="200">
+            {payout.status === "PENDING" && (
+              <>
+                <Button
+                  variant="primary"
+                  size="micro"
+                  onClick={() => handleAction("approve", payout.id)}
+                >
+                  Approve
+                </Button>
+                <Button
+                  tone="critical"
+                  size="micro"
+                  onClick={() => handleAction("reject", payout.id)}
+                >
+                  Reject
+                </Button>
+              </>
+            )}
+            {payout.status === "APPROVED" && (
+              <Button
+                variant="primary"
+                size="micro"
+                onClick={() => handleAction("mark_paid", payout.id)}
+              >
+                Mark Paid
+              </Button>
+            )}
+          </InlineStack>
+        </IndexTable.Cell>
+      </IndexTable.Row>
+    );
+  });
 
   return (
-    <s-page heading="Payouts">
-      <s-badge slot="title-metadata">{totalCount} total</s-badge>
-      <s-badge slot="title-metadata" tone="info">
-        Mode: {shopPayoutMode === "RAZORPAY_X" ? "Razorpay X" : "Manual"}
-      </s-badge>
-
-      {/* Tabs */}
-      <s-tabs>
-        {tabs.map((tab) => (
-          <s-tab
-            key={tab.id}
-            id={tab.id}
-            selected={currentStatus === tab.id ? true : undefined}
-            onClick={() => {
-              const params = new URLSearchParams();
+    <Page
+      title="Payouts"
+      titleMetadata={
+        <InlineStack gap="200">
+          <Badge>{`${totalCount} total`}</Badge>
+          <Badge tone="info">{`Mode: ${shopPayoutMode === "RAZORPAY_X" ? "Razorpay X" : "Manual"}`}</Badge>
+        </InlineStack>
+      }
+    >
+      <BlockStack gap="400">
+        <Card padding="0">
+          <Tabs
+            tabs={tabs}
+            selected={selectedTab}
+            onSelect={(idx) => {
+              const tab = tabs[idx];
+              const params = new URLSearchParams(searchParams);
               if (tab.id !== "ALL") params.set("status", tab.id);
+              else params.delete("status");
+              params.delete("cursor");
               setSearchParams(params);
             }}
-          >
-            {tab.label}
-          </s-tab>
-        ))}
-      </s-tabs>
+          />
 
-      {/* Payouts Table */}
-      <s-card>
-        {payouts.length === 0 ? (
-          <s-empty-state
-            heading="No payouts yet"
-            image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
-          >
-            <s-text>
-              Payouts will appear here when affiliates request commission withdrawals.
-            </s-text>
-          </s-empty-state>
-        ) : (
-          <s-data-table>
-            <s-data-table-head>
-              <s-data-table-header-cell>Affiliate</s-data-table-header-cell>
-              <s-data-table-header-cell>Amount</s-data-table-header-cell>
-              <s-data-table-header-cell>GST</s-data-table-header-cell>
-              <s-data-table-header-cell>TDS</s-data-table-header-cell>
-              <s-data-table-header-cell>Net</s-data-table-header-cell>
-              <s-data-table-header-cell>Status</s-data-table-header-cell>
-              <s-data-table-header-cell>Date</s-data-table-header-cell>
-              <s-data-table-header-cell>Actions</s-data-table-header-cell>
-            </s-data-table-head>
-            <s-data-table-body>
-              {payouts.map((payout) => {
-                const netAmount = payout.baseAmount + payout.gstAmount - payout.tdsAmount;
-                return (
-                  <s-data-table-row key={payout.id}>
-                    <s-data-table-cell>
-                      <s-stack direction="block" gap="tight">
-                        <s-text fontWeight="semibold">{payout.affiliateName}</s-text>
-                        <s-text variant="bodySm" tone="subdued">
-                          {payout.affiliateUpi || payout.affiliateEmail}
-                        </s-text>
-                      </s-stack>
-                    </s-data-table-cell>
-                    <s-data-table-cell>{formatINR(payout.baseAmount)}</s-data-table-cell>
-                    <s-data-table-cell>
-                      {payout.gstAmount > 0 ? `+${formatINR(payout.gstAmount)}` : "—"}
-                    </s-data-table-cell>
-                    <s-data-table-cell>
-                      {payout.tdsAmount > 0 ? `-${formatINR(payout.tdsAmount)}` : "—"}
-                    </s-data-table-cell>
-                    <s-data-table-cell>
-                      <s-text fontWeight="semibold">{formatINR(netAmount)}</s-text>
-                    </s-data-table-cell>
-                    <s-data-table-cell>
-                      <s-badge tone={statusTone(payout.status)}>{payout.status}</s-badge>
-                    </s-data-table-cell>
-                    <s-data-table-cell>
-                      {new Date(payout.createdAt).toLocaleDateString("en-IN")}
-                    </s-data-table-cell>
-                    <s-data-table-cell>
-                      <s-stack direction="inline" gap="tight">
-                        {payout.status === "PENDING" && (
-                          <>
-                            <s-button
-                              variant="primary"
-                              size="slim"
-                              onClick={() => handleAction("approve", payout.id)}
-                            >
-                              Approve
-                            </s-button>
-                            <s-button
-                              tone="critical"
-                              size="slim"
-                              onClick={() => handleAction("reject", payout.id)}
-                            >
-                              Reject
-                            </s-button>
-                          </>
-                        )}
-                        {payout.status === "APPROVED" && (
-                          <s-button
-                            variant="primary"
-                            size="slim"
-                            onClick={() => handleAction("mark_paid", payout.id)}
-                          >
-                            Mark Paid
-                          </s-button>
-                        )}
-                      </s-stack>
-                    </s-data-table-cell>
-                  </s-data-table-row>
-                );
-              })}
-            </s-data-table-body>
-          </s-data-table>
-        )}
-
-        {/* Pagination */}
-        {hasMore && nextCursor && (
-          <s-stack direction="inline" gap="base" align="center">
-            <s-button
-              onClick={() => {
-                const params = new URLSearchParams(searchParams);
-                params.set("cursor", nextCursor);
-                setSearchParams(params);
-              }}
+          {payouts.length === 0 ? (
+            <div style={{ padding: "16px" }}>
+              <EmptyState
+                heading="No payouts yet"
+                image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
+              >
+                <p>
+                  Payouts will appear here when affiliates request commission withdrawals.
+                </p>
+              </EmptyState>
+            </div>
+          ) : (
+            <IndexTable
+              resourceName={{ singular: "payout", plural: "payouts" }}
+              itemCount={payouts.length}
+              headings={[
+                { title: "Affiliate" },
+                { title: "Amount" },
+                { title: "GST" },
+                { title: "TDS" },
+                { title: "Net" },
+                { title: "Status" },
+                { title: "Date" },
+                { title: "Actions" },
+              ]}
+              selectable={false}
             >
-              Load More →
-            </s-button>
-          </s-stack>
-        )}
-      </s-card>
-    </s-page>
+              {rowMarkup}
+            </IndexTable>
+          )}
+
+          {/* Pagination */}
+          {hasMore && nextCursor && (
+            <div style={{ padding: "16px", display: "flex", justifyContent: "center" }}>
+              <InlineStack gap="300" align="center">
+                <Button
+                  onClick={() => {
+                    const params = new URLSearchParams(searchParams);
+                    params.set("cursor", nextCursor);
+                    setSearchParams(params);
+                  }}
+                >
+                  Load More &rarr;
+                </Button>
+              </InlineStack>
+            </div>
+          )}
+        </Card>
+      </BlockStack>
+    </Page>
   );
 }
 

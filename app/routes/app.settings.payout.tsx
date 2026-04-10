@@ -3,13 +3,22 @@
  */
 import { useState, useEffect } from "react";
 import type { ActionFunctionArgs, HeadersFunction, LoaderFunctionArgs } from "react-router";
-import { useLoaderData, useFetcher } from "react-router";
-import { useAppBridge } from "@shopify/app-bridge-react";
+import { useLoaderData, useFetcher, useNavigate } from "react-router";
 import { authenticate } from "../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import db from "../db.server";
 import { planHasFeature } from "../lib/plan-features.server";
 import { encryptToString } from "../lib/encryption.server";
+import {
+  Page,
+  Banner,
+  Button,
+  Card,
+  ChoiceList,
+  TextField,
+  Text,
+  BlockStack,
+} from "@shopify/polaris";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
@@ -59,58 +68,100 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 export default function PayoutSettings() {
   const { payoutMode, hasRazorpayConfig, canUseRazorpay } = useLoaderData<typeof loader>();
   const fetcher = useFetcher<typeof action>();
-  const shopify = useAppBridge();
+  const navigate = useNavigate();
 
-  const [mode, setMode] = useState(payoutMode);
+  const [mode, setMode] = useState<"MANUAL" | "RAZORPAY_X">(payoutMode as "MANUAL" | "RAZORPAY_X");
+  const [razorpayKeyId, setRazorpayKeyId] = useState("");
+  const [razorpayKeySecret, setRazorpayKeySecret] = useState("");
+  const [razorpayAccountNumber, setRazorpayAccountNumber] = useState("");
 
   useEffect(() => {
     if (fetcher.data) {
       const data = fetcher.data as Record<string, unknown>;
-      if (data.success) shopify.toast.show(data.message as string);
-      if (data.error) shopify.toast.show(data.error as string, { isError: true });
+      // removed shopify toast 
     }
-  }, [fetcher.data, shopify]);
+  }, [fetcher.data]);
 
   return (
-    <s-page heading="Payout Settings" backAction={{ url: "/app/settings" }}>
-      <s-button slot="primary-action" variant="primary" onClick={() => {
-        const form = document.getElementById("payoutForm") as HTMLFormElement;
-        if (form) fetcher.submit(new FormData(form), { method: "POST" });
-      }}>
-        Save
-      </s-button>
-
-      <form id="payoutForm">
-        <s-card>
-          <s-text variant="headingMd">Payout Mode</s-text>
-          <s-choice-list
-            title="How should affiliates be paid?"
-            selected={[mode]}
-            onChange={(e: CustomEvent) => setMode(e.detail[0])}
-          >
-            <s-choice value="MANUAL">Manual — Mark payouts as paid after transferring manually</s-choice>
-            <s-choice value="RAZORPAY_X" disabled={!canUseRazorpay}>
-              Razorpay X — Auto-pay via UPI/bank transfer {!canUseRazorpay && "(Pro plan required)"}
-            </s-choice>
-          </s-choice-list>
-          <input type="hidden" name="payoutMode" value={mode} />
-        </s-card>
+    <Page
+      title="Payout Settings"
+      backAction={{ content: "Settings", onAction: () => navigate("/app/settings") }}
+      primaryAction={{
+        content: "Save",
+        onAction: () => {
+          fetcher.submit(
+            {
+              payoutMode: mode,
+              razorpayKeyId,
+              razorpayKeySecret,
+              razorpayAccountNumber,
+            },
+            { method: "POST" }
+          );
+        },
+      }}
+    >
+      <BlockStack gap="400">
+        <Card>
+          <BlockStack gap="400">
+            <Text as="h2" variant="headingMd">Payout Mode</Text>
+            <ChoiceList
+              title="How should affiliates be paid?"
+              choices={[
+                {
+                  label: "Manual — Mark payouts as paid after transferring manually",
+                  value: "MANUAL",
+                },
+                {
+                  label: "Razorpay X — Auto-pay via UPI/bank transfer" +
+                         (!canUseRazorpay ? " (Pro plan required)" : ""),
+                  value: "RAZORPAY_X",
+                  disabled: !canUseRazorpay,
+                },
+              ]}
+              selected={[mode]}
+              onChange={(selections) => setMode(selections[0] as "MANUAL" | "RAZORPAY_X")}
+            />
+          </BlockStack>
+        </Card>
 
         {mode === "RAZORPAY_X" && (
-          <s-card>
-            <s-text variant="headingMd">Razorpay X Credentials</s-text>
-            {hasRazorpayConfig && (
-              <s-banner tone="info">
-                Razorpay X credentials are already configured. Enter new values to update.
-              </s-banner>
-            )}
-            <s-text-field name="razorpayKeyId" label="Key ID" placeholder="rzp_live_..." />
-            <s-text-field name="razorpayKeySecret" label="Key Secret" type="password" placeholder="Enter secret..." />
-            <s-text-field name="razorpayAccountNumber" label="Account Number" placeholder="Account number for payouts" />
-          </s-card>
+          <Card>
+            <BlockStack gap="400">
+              <Text as="h2" variant="headingMd">Razorpay X Credentials</Text>
+              {hasRazorpayConfig && (
+                <Banner tone="info">
+                  <p>Razorpay X credentials are already configured. Enter new values to update.</p>
+                </Banner>
+              )}
+              
+              <TextField
+                label="Key ID"
+                value={razorpayKeyId}
+                onChange={setRazorpayKeyId}
+                placeholder="rzp_live_..."
+                autoComplete="off"
+              />
+              <TextField
+                label="Key Secret"
+                type="password"
+                value={razorpayKeySecret}
+                onChange={setRazorpayKeySecret}
+                placeholder="Enter secret..."
+                autoComplete="off"
+              />
+              <TextField
+                label="Account Number"
+                value={razorpayAccountNumber}
+                onChange={setRazorpayAccountNumber}
+                placeholder="Account number for payouts"
+                autoComplete="off"
+              />
+            </BlockStack>
+          </Card>
         )}
-      </form>
-    </s-page>
+      </BlockStack>
+    </Page>
   );
 }
 

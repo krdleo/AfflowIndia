@@ -4,12 +4,22 @@
 
 import { useState, useEffect } from "react";
 import type { ActionFunctionArgs, HeadersFunction, LoaderFunctionArgs } from "react-router";
-import { useLoaderData, useFetcher } from "react-router";
-import { useAppBridge } from "@shopify/app-bridge-react";
+import { useLoaderData, useFetcher, useNavigate } from "react-router";
 import { authenticate } from "../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import db from "../db.server";
 import { planHasFeature } from "../lib/plan-features.server";
+import { Prisma } from "@prisma/client";
+import {
+  Page,
+  Banner,
+  Button,
+  Card,
+  TextField,
+  Text,
+  Checkbox,
+  BlockStack,
+} from "@shopify/polaris";
 
 interface PortalConfig {
   programName: string;
@@ -50,7 +60,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const shop = await db.shop.findUnique({ where: { shopDomain: session.shop } });
   if (!shop) throw new Response("Shop not found", { status: 404 });
 
-  const config = (shop.portalCustomization as PortalConfig) || DEFAULT_CONFIG;
+  const config = (shop.portalCustomization as unknown as PortalConfig) || DEFAULT_CONFIG;
 
   return {
     config: { ...DEFAULT_CONFIG, ...config },
@@ -85,7 +95,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   await db.shop.update({
     where: { id: shop.id },
-    data: { portalCustomization: config as unknown as Record<string, unknown> },
+    data: { portalCustomization: config as unknown as Prisma.InputJsonValue },
   });
 
   return { success: true, message: "Portal customization saved" };
@@ -94,16 +104,16 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 export default function PortalSettings() {
   const { config, canCustomize } = useLoaderData<typeof loader>();
   const fetcher = useFetcher<typeof action>();
-  const shopify = useAppBridge();
+  const navigate = useNavigate();
 
   const [form, setForm] = useState(config);
 
   useEffect(() => {
     if (fetcher.data) {
       const data = fetcher.data as Record<string, unknown>;
-      if (data.success) shopify.toast.show(data.message as string);
+      // toast removed
     }
-  }, [fetcher.data, shopify]);
+  }, [fetcher.data]);
 
   const handleSave = () => {
     const formData = new FormData();
@@ -119,62 +129,78 @@ export default function PortalSettings() {
 
   if (!canCustomize) {
     return (
-      <s-page heading="Portal Customization" backAction={{ url: "/app/settings" }}>
-        <s-banner tone="warning">
-          Portal customization requires the Starter plan or higher.
-          <s-button href="/app/settings/billing" variant="primary">
-            Upgrade Plan
-          </s-button>
-        </s-banner>
-      </s-page>
+      <Page
+        title="Portal Customization"
+        backAction={{ content: "Settings", onAction: () => navigate("/app/settings") }}
+      >
+        <Banner tone="warning">
+          <p>
+            Portal customization requires the Starter plan or higher.{" "}
+            <Button variant="primary" onClick={() => navigate("/app/settings/billing")}>
+              Upgrade Plan
+            </Button>
+          </p>
+        </Banner>
+      </Page>
     );
   }
 
   return (
-    <s-page heading="Portal Customization" backAction={{ url: "/app/settings" }}>
-      <s-button slot="primary-action" variant="primary" onClick={handleSave}>
-        Save
-      </s-button>
+    <Page
+      title="Portal Customization"
+      backAction={{ content: "Settings", onAction: () => navigate("/app/settings") }}
+      primaryAction={{
+        content: "Save",
+        onAction: handleSave,
+      }}
+    >
+      <BlockStack gap="400">
+        {/* Branding */}
+        <Card>
+          <BlockStack gap="400">
+            <Text as="h2" variant="headingMd">Branding</Text>
+            <TextField label="Program Name" value={form.programName} onChange={(value) => updateField("programName", value)} autoComplete="off" />
+            <TextField label="Logo URL" value={form.logoUrl} onChange={(value) => updateField("logoUrl", value)} helpText="URL to your program logo" autoComplete="off" />
+            <TextField label="Banner URL" value={form.bannerUrl} onChange={(value) => updateField("bannerUrl", value)} helpText="URL to your portal banner image" autoComplete="off" />
+            <TextField label="Primary Color" value={form.primaryColor} onChange={(value) => updateField("primaryColor", value)} helpText="Hex color code (e.g., #4f46e5)" autoComplete="off" />
+            <TextField label="Accent Color" value={form.accentColor} onChange={(value) => updateField("accentColor", value)} autoComplete="off" />
+          </BlockStack>
+        </Card>
 
-      {/* Branding */}
-      <s-card>
-        <s-text variant="headingMd">Branding</s-text>
-        <s-text-field label="Program Name" value={form.programName} onInput={(e: CustomEvent) => updateField("programName", (e.target as HTMLInputElement).value)} />
-        <s-text-field label="Logo URL" value={form.logoUrl} onInput={(e: CustomEvent) => updateField("logoUrl", (e.target as HTMLInputElement).value)} helpText="URL to your program logo" />
-        <s-text-field label="Banner URL" value={form.bannerUrl} onInput={(e: CustomEvent) => updateField("bannerUrl", (e.target as HTMLInputElement).value)} helpText="URL to your portal banner image" />
-        <s-text-field label="Primary Color" value={form.primaryColor} onInput={(e: CustomEvent) => updateField("primaryColor", (e.target as HTMLInputElement).value)} helpText="Hex color code (e.g., #4f46e5)" />
-        <s-text-field label="Accent Color" value={form.accentColor} onInput={(e: CustomEvent) => updateField("accentColor", (e.target as HTMLInputElement).value)} />
-      </s-card>
+        {/* Welcome Content */}
+        <Card>
+          <BlockStack gap="400">
+            <Text as="h2" variant="headingMd">Welcome Content</Text>
+            <TextField label="Welcome Heading" value={form.welcomeHeading} onChange={(value) => updateField("welcomeHeading", value)} autoComplete="off" />
+            <TextField label="Welcome Message" value={form.welcomeMessage} onChange={(value) => updateField("welcomeMessage", value)} multiline={4} autoComplete="off" />
+            <TextField label="Terms & Conditions" value={form.termsText} onChange={(value) => updateField("termsText", value)} multiline={6} helpText="Displayed during affiliate signup" autoComplete="off" />
+          </BlockStack>
+        </Card>
 
-      {/* Welcome Content */}
-      <s-card>
-        <s-text variant="headingMd">Welcome Content</s-text>
-        <s-text-field label="Welcome Heading" value={form.welcomeHeading} onInput={(e: CustomEvent) => updateField("welcomeHeading", (e.target as HTMLInputElement).value)} />
-        <s-text-field label="Welcome Message" value={form.welcomeMessage} onInput={(e: CustomEvent) => updateField("welcomeMessage", (e.target as HTMLInputElement).value)} multiline="4" />
-        <s-text-field label="Terms & Conditions" value={form.termsText} onInput={(e: CustomEvent) => updateField("termsText", (e.target as HTMLInputElement).value)} multiline="6" helpText="Displayed during affiliate signup" />
-      </s-card>
+        {/* Signup Settings */}
+        <Card>
+          <BlockStack gap="400">
+            <Text as="h2" variant="headingMd">Signup Settings</Text>
+            <Checkbox label="Allow new affiliate signups" checked={form.signupsEnabled} onChange={(checked) => updateField("signupsEnabled", checked)} />
+            <Checkbox label="Require manual approval for new affiliates" checked={form.requireApproval} onChange={(checked) => updateField("requireApproval", checked)} />
+          </BlockStack>
+        </Card>
 
-      {/* Signup Settings */}
-      <s-card>
-        <s-text variant="headingMd">Signup Settings</s-text>
-        <s-checkbox checked={form.signupsEnabled ? true : undefined} onChange={(e: CustomEvent) => updateField("signupsEnabled", (e.target as HTMLInputElement).checked)}>
-          Allow new affiliate signups
-        </s-checkbox>
-        <s-checkbox checked={form.requireApproval ? true : undefined} onChange={(e: CustomEvent) => updateField("requireApproval", (e.target as HTMLInputElement).checked)}>
-          Require manual approval for new affiliates
-        </s-checkbox>
-      </s-card>
-
-      {/* Field Visibility */}
-      <s-card>
-        <s-text variant="headingMd">Signup Form Fields</s-text>
-        <s-text tone="subdued">Choose which optional fields to show during affiliate signup</s-text>
-        <s-checkbox checked={form.showPhone ? true : undefined} onChange={(e: CustomEvent) => updateField("showPhone", (e.target as HTMLInputElement).checked)}>Phone Number</s-checkbox>
-        <s-checkbox checked={form.showUpi ? true : undefined} onChange={(e: CustomEvent) => updateField("showUpi", (e.target as HTMLInputElement).checked)}>UPI ID</s-checkbox>
-        <s-checkbox checked={form.showPan ? true : undefined} onChange={(e: CustomEvent) => updateField("showPan", (e.target as HTMLInputElement).checked)}>PAN Number</s-checkbox>
-        <s-checkbox checked={form.showGstin ? true : undefined} onChange={(e: CustomEvent) => updateField("showGstin", (e.target as HTMLInputElement).checked)}>GSTIN</s-checkbox>
-      </s-card>
-    </s-page>
+        {/* Field Visibility */}
+        <Card>
+          <BlockStack gap="400">
+            <BlockStack gap="100">
+              <Text as="h2" variant="headingMd">Signup Form Fields</Text>
+              <Text as="p" tone="subdued">Choose which optional fields to show during affiliate signup</Text>
+            </BlockStack>
+            <Checkbox label="Phone Number" checked={form.showPhone} onChange={(checked) => updateField("showPhone", checked)} />
+            <Checkbox label="UPI ID" checked={form.showUpi} onChange={(checked) => updateField("showUpi", checked)} />
+            <Checkbox label="PAN Number" checked={form.showPan} onChange={(checked) => updateField("showPan", checked)} />
+            <Checkbox label="GSTIN" checked={form.showGstin} onChange={(checked) => updateField("showGstin", checked)} />
+          </BlockStack>
+        </Card>
+      </BlockStack>
+    </Page>
   );
 }
 
