@@ -8,6 +8,7 @@
  */
 
 import jwt from "jsonwebtoken";
+import { createCookieSessionStorage, redirect } from "react-router";
 
 interface JWTPayload {
   affiliateId: string;
@@ -82,4 +83,64 @@ export function authenticatePortalRequest(request: Request): JWTPayload {
   }
 
   return payload;
+}
+
+// Cookie-based session storage for Affiliate Portal (independent of Shopify App Bridge)
+export const affiliateSessionStorage = createCookieSessionStorage({
+  cookie: {
+    name: "__affiliate_session",
+    httpOnly: true,
+    path: "/portal",
+    sameSite: "lax",
+    secrets: [process.env.JWT_SECRET || "default_local_secret"],
+    secure: process.env.NODE_ENV === "production",
+  },
+});
+
+export async function createAffiliateSession(
+  affiliateId: string,
+  shopDomain: string
+) {
+  const session = await affiliateSessionStorage.getSession();
+  session.set("affiliateId", affiliateId);
+  session.set("shopDomain", shopDomain);
+  
+  return new Headers({
+    "Set-Cookie": await affiliateSessionStorage.commitSession(session, {
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+    }),
+  });
+}
+
+export async function getAffiliateSession(request: Request) {
+  const cookie = request.headers.get("Cookie");
+  const session = await affiliateSessionStorage.getSession(cookie);
+  const affiliateId = session.get("affiliateId");
+  const shopDomain = session.get("shopDomain");
+
+  return affiliateId && shopDomain ? { affiliateId, shopDomain } : null;
+}
+
+export async function requireAffiliateAuth(request: Request) {
+  const session = await getAffiliateSession(request);
+  if (!session) {
+    throw redirect("/portal/login");
+  }
+  return session;
+}
+
+export async function isAffiliateAuthed(request: Request): Promise<boolean> {
+  const session = await getAffiliateSession(request);
+  return session !== null;
+}
+
+export async function destroyAffiliateSession(request: Request) {
+  const session = await affiliateSessionStorage.getSession(
+    request.headers.get("Cookie")
+  );
+  return redirect("/portal/login", {
+    headers: {
+      "Set-Cookie": await affiliateSessionStorage.destroySession(session),
+    },
+  });
 }

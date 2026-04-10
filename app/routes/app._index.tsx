@@ -7,7 +7,7 @@
 
 import { useEffect } from "react";
 import type { HeadersFunction, LoaderFunctionArgs } from "react-router";
-import { useLoaderData } from "react-router";
+import { useLoaderData, useRevalidator } from "react-router";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
@@ -64,6 +64,39 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     _sum: { orderAmount: true, commissionAmount: true },
   });
 
+  // Fetch last 7 days sales data for chart
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  sevenDaysAgo.setHours(0, 0, 0, 0);
+
+  const dailyReferrals = await db.referral.findMany({
+    where: { 
+      shopId: shop.id,
+      createdAt: { gte: sevenDaysAgo }
+    },
+    select: { orderAmount: true, createdAt: true },
+  });
+
+  // Group by day
+  const salesByDayMap = new Map<string, number>();
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    salesByDayMap.set(d.toLocaleDateString("en-US", { month: "short", day: "numeric" }), 0);
+  }
+
+  dailyReferrals.forEach(ref => {
+    const dayStr = ref.createdAt.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    if (salesByDayMap.has(dayStr)) {
+      salesByDayMap.set(dayStr, salesByDayMap.get(dayStr)! + Number(ref.orderAmount));
+    }
+  });
+
+  const chartData = Array.from(salesByDayMap.entries()).map(([date, sales]) => ({
+    date,
+    sales
+  }));
+
   const pendingCommissionAgg = await db.affiliate.aggregate({
     where: { shopId: shop.id },
     _sum: { pendingCommission: true },
@@ -93,6 +126,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       commissionAmount: Number(r.commissionAmount),
       createdAt: r.createdAt.toISOString(),
     })),
+    chartData,
   };
 };
 
@@ -110,9 +144,21 @@ import {
   BlockStack,
   Link,
 } from "@shopify/polaris";
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 
 export default function Dashboard() {
-  const { stats, recentReferrals, shop } = useLoaderData<typeof loader>();
+  const { stats, recentReferrals, shop, chartData } = useLoaderData<typeof loader>();
+  const revalidator = useRevalidator();
+
+  // Polling for real-time updates every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (revalidator.state === "idle") {
+        revalidator.revalidate();
+      }
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [revalidator]);
 
   useEffect(() => {
     document.title = "AfflowIndia — Dashboard";
@@ -188,6 +234,28 @@ export default function Dashboard() {
             </Card>
           </Layout.Section>
         </Layout>
+
+        {/* Real-time Sales Chart */}
+        <Card padding="0">
+          <div style={{ padding: "16px", borderBottom: "1px solid #ebebeb", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <Text as="h2" variant="headingMd">Sales Over Time (Last 7 Days)</Text>
+            {revalidator.state === "loading" && <Badge tone="info">Live Updating...</Badge>}
+          </div>
+          <div style={{ padding: "20px", height: "300px" }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E1E3E5" />
+                <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: '#6D7175', fontSize: 12 }} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#6D7175', fontSize: 12 }} dx={-10} tickFormatter={(val) => `₹${val}`} />
+                <Tooltip 
+                  formatter={(value: any) => [`₹${Number(value).toLocaleString('en-IN')}`, "Sales"]}
+                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                />
+                <Line type="monotone" dataKey="sales" stroke="#008060" strokeWidth={3} activeDot={{ r: 6 }} dot={{ r: 4, fill: '#008060', strokeWidth: 0 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
 
         {/* Recent Referrals */}
         <Card padding="0">
