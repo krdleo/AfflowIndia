@@ -1,8 +1,8 @@
 # AfflowIndia — Shopify App Configuration
 # Affiliate marketing app for Indian e-commerce merchants
-client_id = ""
-name = "AfflowIndia"
-application_url = ""
+client_id = "032e75d7a920d85176feab7fda8524c8"
+name = "AfflowIndia_V1"
+application_url = "https://shopify.dev/apps/default-app-home"
 embedded = true
 
 [access_scopes]
@@ -14,8 +14,9 @@ scopes = "read_orders, write_discounts, write_app_proxy"
 
 [auth]
 redirect_urls = [
-  "/auth/callback",
-  "/auth/shopify/callback",
+  "https://shopify.dev/apps/default-app-home/auth/callback",
+  "https://shopify.dev/apps/default-app-home/auth/shopify/callback",
+  "https://shopify.dev/apps/default-app-home/api/auth/callback"
 ]
 
 [build]
