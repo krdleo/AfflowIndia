@@ -137,6 +137,4 @@ All user inputs validated with Zod schemas defined in `lib/validation.server.ts`
 - **Migrations**: `npx prisma migrate dev` (dev), `npx prisma migrate deploy` (prod)
 - **Models**: Shop, Affiliate, Referral, Payout, GstSetting, TdsSetting
 
-## Current Status
 
-The backend is complete (encryption, commission, billing, webhooks, GST/TDS, Razorpay X, JWT auth, fraud detection). The admin frontend components exist but have **120+ TypeScript errors** because they were built with App Bridge web components (`<s-*>` tags) instead of Polaris React components. These need to be refactored to use `@shopify/polaris` (`<Page>`, `<Card>`, `<Text>`, `<Button>`, `<DataTable>`, etc.). The affiliate portal API is complete but the Tailwind frontend pages are pending.
