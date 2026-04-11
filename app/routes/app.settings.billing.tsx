@@ -3,7 +3,7 @@
  */
 import { useEffect } from "react";
 import type { ActionFunctionArgs, HeadersFunction, LoaderFunctionArgs } from "react-router";
-import { useLoaderData, useFetcher, redirect, useNavigate } from "react-router";
+import { useLoaderData, useFetcher, useNavigate } from "react-router";
 import { authenticate } from "../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import db from "../db.server";
@@ -58,7 +58,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const confirmationUrl = await createSubscription(admin, targetPlan, returnUrl);
 
     if (confirmationUrl) {
-      return redirect(confirmationUrl);
+      return { confirmationUrl };
     }
 
     return { error: "Failed to create subscription" };
@@ -75,9 +75,12 @@ export default function BillingSettings() {
   useEffect(() => {
     if (fetcher.data) {
       const data = fetcher.data as Record<string, unknown>;
-      // If we had shopify.toast we'd use it here, but we removed useAppBridge
-      // since the toast is from javascript app bridge usually. 
-      // We'll leave it out or maybe just console.error for now.
+      if (data.confirmationUrl) {
+        // Navigate the top-level frame (outside the iframe) to Shopify's billing confirmation page
+        window.open(data.confirmationUrl as string, "_top");
+      } else if (data.error) {
+        shopify.toast.show(data.error as string, { isError: true });
+      }
     }
   }, [fetcher.data]);
 

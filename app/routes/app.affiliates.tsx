@@ -14,6 +14,7 @@ import type {
   LoaderFunctionArgs,
 } from "react-router";
 import { useLoaderData, useFetcher, useSearchParams, useNavigate } from "react-router";
+import bcrypt from "bcryptjs";
 import { authenticate } from "../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import db from "../db.server";
@@ -32,6 +33,7 @@ import {
   IndexTable,
   Text,
   Modal,
+  FormLayout,
 } from "@shopify/polaris";
 
 const PAGE_SIZE = 20;
@@ -120,6 +122,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       planName: PLAN_CONFIGS[shop.plan].name,
     },
     shopPlan: shop.plan,
+    defaultCommissionRate: Number(shop.defaultCommissionRate),
   };
 };
 
@@ -132,10 +135,73 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   const formData = await request.formData();
   const actionType = formData.get("_action") as string;
-  const affiliateId = formData.get("affiliateId") as string;
 
-  if (!actionType || !affiliateId) {
-    return { error: "Missing action or affiliate ID" };
+  if (!actionType) {
+    return { error: "Missing action" };
+  }
+
+  // ── Add affiliate manually ──────────────────────────────────
+  if (actionType === "add_affiliate") {
+    const limitInfo = await checkAffiliateLimit(shop.id, shop.plan);
+    if (!limitInfo.allowed) {
+      return { error: `Affiliate limit reached for the ${PLAN_CONFIGS[shop.plan].name} plan. Upgrade to add more.` };
+    }
+
+    const name = (formData.get("name") as string)?.trim();
+    const email = (formData.get("email") as string)?.trim().toLowerCase();
+    const commissionRate = parseFloat((formData.get("commissionRate") as string) || "10");
+    const discountPercent = parseFloat((formData.get("discountPercent") as string) || "10");
+    let code = ((formData.get("code") as string) || "").trim().toUpperCase();
+
+    if (!name || !email) {
+      return { error: "Name and email are required" };
+    }
+
+    if (!code) {
+      const base = name.replace(/[^A-Za-z]/g, "").toUpperCase().substring(0, 5) || "AFF";
+      const suffix = Math.floor(10 + Math.random() * 90);
+      code = `${base}${suffix}`;
+    }
+
+    const existingEmail = await db.affiliate.findFirst({ where: { shopId: shop.id, email } });
+    if (existingEmail) return { error: "An affiliate with this email already exists" };
+
+    const existingCode = await db.affiliate.findFirst({ where: { shopId: shop.id, code } });
+    if (existingCode) return { error: `Code "${code}" is already in use. Choose a different one.` };
+
+    const { generateUrlSafeCode } = await import("../lib/encryption.server");
+    const referralCode = generateUrlSafeCode(8);
+    const tempPassword = generateUrlSafeCode(12);
+    const passwordHash = await bcrypt.hash(tempPassword, 12);
+
+    await db.affiliate.create({
+      data: {
+        shopId: shop.id,
+        name,
+        email,
+        code,
+        referralCode,
+        commissionRate,
+        discountPercent,
+        passwordHash,
+        status: "ACTIVE",
+      },
+    });
+
+    return {
+      success: true,
+      message: `${name} added as an active affiliate`,
+      tempPassword,
+      affiliateName: name,
+      affiliateEmail: email,
+      affiliateCode: code,
+    };
+  }
+
+  // ── Existing affiliate actions (all need affiliateId) ───────
+  const affiliateId = formData.get("affiliateId") as string;
+  if (!affiliateId) {
+    return { error: "Missing affiliate ID" };
   }
 
   const affiliate = await db.affiliate.findFirst({
@@ -240,7 +306,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function Affiliates() {
-  const { affiliates, totalCount, hasMore, nextCursor, statusCounts, limitInfo } =
+  const { affiliates, totalCount, hasMore, nextCursor, statusCounts, limitInfo, defaultCommissionRate } =
     useLoaderData<typeof loader>();
   const [searchParams, setSearchParams] = useSearchParams();
   const fetcher = useFetcher<typeof action>();
@@ -255,16 +321,40 @@ export default function Affiliates() {
     name: string;
   } | null>(null);
 
+  const [addModalOpen, setAddModalOpen] = useState(false);
+  const [addForm, setAddForm] = useState({
+    name: "",
+    email: "",
+    commissionRate: String(defaultCommissionRate),
+    discountPercent: "10",
+    code: "",
+  });
+  const [createdCredentials, setCreatedCredentials] = useState<{
+    name: string;
+    email: string;
+    code: string;
+    tempPassword: string;
+  } | null>(null);
+
   useEffect(() => {
     if (fetcher.data) {
       const data = fetcher.data as Record<string, unknown>;
-      if (data.success) {
+      if (data.tempPassword) {
+        setCreatedCredentials({
+          name: data.affiliateName as string,
+          email: data.affiliateEmail as string,
+          code: data.affiliateCode as string,
+          tempPassword: data.tempPassword as string,
+        });
+        setAddModalOpen(false);
+        setAddForm({ name: "", email: "", commissionRate: String(defaultCommissionRate), discountPercent: "10", code: "" });
+      } else if (data.success) {
         shopify.toast.show(data.message as string);
       } else if (data.error) {
         shopify.toast.show(data.error as string, { isError: true });
       }
     }
-  }, [fetcher.data]);
+  }, [fetcher.data, defaultCommissionRate]);
 
   const handleSearch = useCallback(() => {
     const params = new URLSearchParams(searchParams);
@@ -394,6 +484,11 @@ export default function Affiliates() {
     <Page
       title="Affiliates"
       titleMetadata={<Badge>{`${totalCount} total`}</Badge>}
+      primaryAction={{
+        content: "Add affiliate",
+        disabled: !limitInfo.allowed,
+        onAction: () => setAddModalOpen(true),
+      }}
     >
       <BlockStack gap="400">
         {/* Limit warning */}
@@ -492,6 +587,89 @@ export default function Affiliates() {
           )}
         </Card>
       </BlockStack>
+
+      {/* Add Affiliate Modal */}
+      <Modal
+        open={addModalOpen}
+        onClose={() => setAddModalOpen(false)}
+        title="Add affiliate manually"
+        primaryAction={{
+          content: "Add affiliate",
+          loading: fetcher.state !== "idle",
+          onAction: () =>
+            fetcher.submit(
+              { _action: "add_affiliate", ...addForm },
+              { method: "POST" }
+            ),
+        }}
+        secondaryActions={[{ content: "Cancel", onAction: () => setAddModalOpen(false) }]}
+      >
+        <Modal.Section>
+          <FormLayout>
+            <TextField
+              label="Full name"
+              value={addForm.name}
+              onChange={(val) => setAddForm((f) => ({ ...f, name: val }))}
+              autoComplete="off"
+            />
+            <TextField
+              label="Email"
+              type="email"
+              value={addForm.email}
+              onChange={(val) => setAddForm((f) => ({ ...f, email: val }))}
+              autoComplete="off"
+            />
+            <FormLayout.Group>
+              <TextField
+                label="Commission rate (%)"
+                type="number"
+                value={addForm.commissionRate}
+                onChange={(val) => setAddForm((f) => ({ ...f, commissionRate: val }))}
+                autoComplete="off"
+              />
+              <TextField
+                label="Customer discount (%)"
+                type="number"
+                value={addForm.discountPercent}
+                onChange={(val) => setAddForm((f) => ({ ...f, discountPercent: val }))}
+                autoComplete="off"
+              />
+            </FormLayout.Group>
+            <TextField
+              label="Affiliate code"
+              helpText="Leave blank to auto-generate from their name (e.g. PRIYA42)"
+              value={addForm.code}
+              onChange={(val) => setAddForm((f) => ({ ...f, code: val.toUpperCase() }))}
+              autoComplete="off"
+            />
+          </FormLayout>
+        </Modal.Section>
+      </Modal>
+
+      {/* Credentials Modal — shown once after affiliate is created */}
+      {createdCredentials && (
+        <Modal
+          open={!!createdCredentials}
+          onClose={() => setCreatedCredentials(null)}
+          title={`${createdCredentials.name} added`}
+          primaryAction={{ content: "Done", onAction: () => setCreatedCredentials(null) }}
+        >
+          <Modal.Section>
+            <BlockStack gap="400">
+              <Text as="p">
+                Share these login credentials with the affiliate. The password is shown only once.
+              </Text>
+              <Banner tone="warning">
+                <BlockStack gap="200">
+                  <Text as="p"><strong>Portal login:</strong> {createdCredentials.email}</Text>
+                  <Text as="p"><strong>Temp password:</strong> {createdCredentials.tempPassword}</Text>
+                  <Text as="p"><strong>Affiliate code:</strong> {createdCredentials.code}</Text>
+                </BlockStack>
+              </Banner>
+            </BlockStack>
+          </Modal.Section>
+        </Modal>
+      )}
 
       {/* Confirmation Modal */}
       {confirmAction && (
