@@ -23,7 +23,13 @@ function getEncryptionKey(): Buffer {
       "ENCRYPTION_KEY environment variable is required. Generate with: node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\""
     );
   }
-  return Buffer.from(key, "hex");
+  const buf = Buffer.from(key, "hex");
+  if (buf.length !== 32) {
+    throw new Error(
+      `ENCRYPTION_KEY must be a 64-character hex string (32 bytes). Got ${buf.length} bytes from a ${key.length}-character string. Generate with: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
+    );
+  }
+  return buf;
 }
 
 /**
