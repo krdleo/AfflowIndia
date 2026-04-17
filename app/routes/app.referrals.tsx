@@ -5,8 +5,8 @@
  * Paginated, sortable.
  */
 
-import type { HeadersFunction, LoaderFunctionArgs } from "react-router";
-import { useLoaderData, useSearchParams } from "react-router";
+import type { ActionFunctionArgs, HeadersFunction, LoaderFunctionArgs } from "react-router";
+import { useLoaderData, useSearchParams, useFetcher } from "react-router";
 import { authenticate } from "../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import db from "../db.server";
@@ -93,10 +93,61 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   };
 };
 
+export const action = async ({ request }: ActionFunctionArgs) => {
+  const { session } = await authenticate.admin(request);
+  const shopDomain = session.shop;
+
+  const shop = await db.shop.findUnique({ where: { shopDomain } });
+  if (!shop) throw new Response("Shop not found", { status: 404 });
+
+  const formData = await request.formData();
+  const actionType = formData.get("_action") as string;
+
+  if (actionType === "export_csv") {
+    const { generateCSV, csvResponse } = await import("../lib/csv.server");
+
+    const allReferrals = await db.referral.findMany({
+      where: { shopId: shop.id },
+      include: {
+        affiliate: { select: { name: true, code: true, email: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    const headers = [
+      "Affiliate Name",
+      "Affiliate Email",
+      "Code",
+      "Order ID",
+      "Order Amount (INR)",
+      "Commission Rate (%)",
+      "Commission (INR)",
+      "Date",
+    ];
+    const rows = allReferrals.map((r) => [
+      r.affiliate.name,
+      r.affiliate.email,
+      r.affiliate.code,
+      r.orderId,
+      Number(r.orderAmount).toFixed(2),
+      Number(r.commissionRate),
+      Number(r.commissionAmount).toFixed(2),
+      r.createdAt.toISOString().split("T")[0],
+    ]);
+
+    const csv = generateCSV(headers, rows);
+    const date = new Date().toISOString().split("T")[0];
+    return csvResponse(csv, `referrals-${date}.csv`);
+  }
+
+  return { error: "Unknown action" };
+};
+
 export default function Referrals() {
   const { referrals, totalCount, hasMore, nextCursor, totals } =
     useLoaderData<typeof loader>();
   const [searchParams, setSearchParams] = useSearchParams();
+  const fetcher = useFetcher<typeof action>();
 
   const formatINR = (amount: number) =>
     `₹${amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
@@ -129,6 +180,13 @@ export default function Referrals() {
     <Page
       title="Referral Tracking"
       titleMetadata={<Badge>{`${totalCount} referrals`}</Badge>}
+      secondaryActions={[
+        {
+          content: "Export CSV",
+          onAction: () =>
+            fetcher.submit({ _action: "export_csv" }, { method: "POST" }),
+        },
+      ]}
     >
       <BlockStack gap="400">
         {/* Summary Stats */}

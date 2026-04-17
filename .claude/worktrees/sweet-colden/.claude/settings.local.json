@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cmd //c \"rd /s /q .claude\\\\worktrees\\\\sweet-colden\")",
+      "Bash(del \"C:\\\\Users\\\\super\\\\AfflowV2\\\\.claude\\\\worktrees\\\\sweet-colden\\\\shopify.web.toml\")"
+    ]
+  }
+}

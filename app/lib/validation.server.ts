@@ -199,6 +199,22 @@ export const discountCodeSchema = z.object({
     .max(100, "Discount must be at most 100%"),
 });
 
+// ─── Bulk Email ─────────────────────────────────────────────
+
+export const bulkEmailSchema = z.object({
+  subject: z
+    .string()
+    .min(1, "Subject is required")
+    .max(200, "Subject must be at most 200 characters")
+    .transform(sanitizeString),
+  message: z
+    .string()
+    .min(1, "Message is required")
+    .max(5000, "Message must be at most 5,000 characters"),
+});
+
+export type BulkEmailInput = z.infer<typeof bulkEmailSchema>;
+
 // ─── Payout Settings ─────────────────────────────────────────
 
 export const payoutSettingsSchema = z.object({

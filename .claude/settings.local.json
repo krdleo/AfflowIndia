@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add:*)",
+      "Bash(git commit -m ':*)",
+      "Bash(npm run:*)",
+      "Bash(git push:*)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(gh --version)",
+      "mcp__mcp-registry__search_mcp_registry",
+      "WebSearch",
+      "Bash(npx prisma:*)",
+      "Bash(tasklist /FI \"IMAGENAME eq node.exe\")",
+      "Bash(tasklist)",
+      "Bash(findstr /i node)",
+      "Bash(npx tsc:*)"
+    ]
+  }
+}

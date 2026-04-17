@@ -153,6 +153,44 @@ export async function sendNewAffiliateAlertEmail(
   });
 }
 
+// ─── Bulk Announcement Email ─────────────────────────────────
+
+export async function sendBulkAnnouncementEmail(
+  to: string,
+  affiliateName: string,
+  subject: string,
+  messageText: string,
+  shopName: string
+): Promise<void> {
+  const resend = getResend();
+
+  // Convert plain text line breaks to HTML paragraphs
+  const messageHtml = escapeHtml(messageText)
+    .split("\n")
+    .filter((line) => line.trim() !== "")
+    .map((line) => `<p style="color: #4a4a4a; font-size: 16px; line-height: 1.6; margin: 8px 0;">${line}</p>`)
+    .join("");
+
+  await resend.emails.send({
+    from: `${shopName} via ${APP_NAME} <${FROM_EMAIL}>`,
+    to,
+    subject,
+    html: `
+      <div style="font-family: -apple-system, system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #1a1a1a;">${escapeHtml(subject)}</h2>
+        <p style="color: #4a4a4a; font-size: 16px; line-height: 1.6;">
+          Hi ${escapeHtml(affiliateName)},
+        </p>
+        ${messageHtml}
+        <hr style="border: none; border-top: 1px solid #e5e5e5; margin: 24px 0;" />
+        <p style="color: #8a8a8a; font-size: 13px;">
+          Sent by ${escapeHtml(shopName)} affiliate program, powered by ${APP_NAME}.
+        </p>
+      </div>
+    `,
+  });
+}
+
 // ─── Helpers ─────────────────────────────────────────────────
 
 function escapeHtml(text: string): string {
