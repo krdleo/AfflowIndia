@@ -157,6 +157,8 @@ model Affiliate {
   state                   String?
   pincode                 String?
 
+  fraudFlags              String?         // Comma-separated fraud flag reasons (set when status = FLAGGED)
+
   lastLogin               DateTime?
 
   createdAt               DateTime        @default(now())

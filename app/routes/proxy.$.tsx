@@ -14,12 +14,38 @@ import type { LoaderFunctionArgs } from "react-router";
 import { authenticate } from "../shopify.server";
 import db from "../db.server";
 
+// Shopify shop domain shape: lowercase alphanumeric, hyphens, ending in .myshopify.com
+// (plus optional custom domains that Shopify authenticates the proxy through).
+// Validating keeps an attacker from crafting a click URL whose `?shop=`
+// points at an unrelated host.
+const SHOP_DOMAIN_RE = /^[a-z0-9][a-z0-9-]*\.myshopify\.com$/;
+
+// Shared 302 response with no-cache so browsers/CDNs never serve a cached
+// redirect that would skip the click-increment side effect.
+function redirectToShop(shop: string): Response {
+  return new Response(null, {
+    status: 302,
+    headers: {
+      Location: `https://${shop}`,
+      "Cache-Control": "no-store, no-cache, must-revalidate, private",
+    },
+  });
+}
+
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  // Authenticate the app proxy request (verifies HMAC signature)
+  // Authenticate the app proxy request (verifies HMAC signature).
   const { session } = await authenticate.public.appProxy(request);
 
   const url = new URL(request.url);
-  const shop = url.searchParams.get("shop") || "";
+  const queryShop = url.searchParams.get("shop")?.toLowerCase() || "";
+
+  // Prefer the shop the session was authenticated for — never the raw query
+  // param, which could be tampered with pre-HMAC-validation layers.
+  const shop = (session?.shop || queryShop).toLowerCase();
+
+  if (!shop || !SHOP_DOMAIN_RE.test(shop)) {
+    return new Response("Invalid shop", { status: 400 });
+  }
 
   // Extract the referral code from the path
   // URL format: /proxy/CODE or /proxy/some/path
@@ -31,17 +57,14 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
 
   try {
-    // Find the shop
     const shopRecord = await db.shop.findUnique({
       where: { shopDomain: shop },
     });
 
     if (!shopRecord || !shopRecord.isActive) {
-      // Redirect to shop anyway
-      return Response.redirect(`https://${shop}`, 302);
+      return redirectToShop(shop);
     }
 
-    // Find affiliate by referral code
     const affiliate = await db.affiliate.findFirst({
       where: {
         shopId: shopRecord.id,
@@ -51,18 +74,18 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     });
 
     if (affiliate) {
-      // Atomically increment totalClicks
       await db.affiliate.update({
         where: { id: affiliate.id },
         data: { totalClicks: { increment: 1 } },
       });
     }
 
-    // Redirect to shop homepage
-    return Response.redirect(`https://${shop}`, 302);
+    return redirectToShop(shop);
   } catch (error) {
-    console.error("Click tracking error:", error);
-    // Always redirect to the shop even on error
-    return Response.redirect(`https://${shop}`, 302);
+    console.error(
+      "Click tracking error:",
+      error instanceof Error ? error.message : "unknown error"
+    );
+    return redirectToShop(shop);
   }
 };

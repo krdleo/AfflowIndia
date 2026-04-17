@@ -41,6 +41,11 @@ api_version = "2026-04"
   topics = ["app/scopes_update"]
   uri = "/webhooks/app/scopes_update"
 
+  # Billing: keep shop.plan in sync with Shopify subscription state
+  [[webhooks.subscriptions]]
+  topics = ["app_subscriptions/update"]
+  uri = "/webhooks/app_subscriptions/update"
+
   # GDPR Mandatory compliance webhooks (required for App Store)
   [[webhooks.subscriptions]]
   uri = "/webhooks/customers/data_request"

@@ -8,11 +8,13 @@
 
 import { useState, useEffect } from "react";
 import type { ActionFunctionArgs, HeadersFunction, LoaderFunctionArgs } from "react-router";
-import { useLoaderData, useFetcher, useNavigate } from "react-router";
+import { useLoaderData, useFetcher, useNavigate, useRouteError } from "react-router";
+import { Prisma } from "@prisma/client";
 import { authenticate } from "../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import db from "../db.server";
 import { planHasFeature } from "../lib/plan-features.server";
+import { commissionSettingsSchema } from "../lib/validation.server";
 import {
   Page,
   Card,
@@ -45,20 +47,41 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   if (!shop) throw new Response("Shop not found", { status: 404 });
 
   const formData = await request.formData();
-  const mode = formData.get("commissionMode") as string;
-  const rate = parseFloat(formData.get("defaultCommissionRate") as string);
-  const tiersJson = formData.get("commissionTiers") as string;
+  const tiersJson = (formData.get("commissionTiers") as string) || "";
 
-  if (mode === "TIERED" && !planHasFeature(shop.plan, "tiered_commissions")) {
+  let tiers: Array<{ thresholdAmount: number; ratePercent: number }> | undefined;
+  if (tiersJson) {
+    try {
+      const raw = JSON.parse(tiersJson);
+      tiers = Array.isArray(raw) ? raw : undefined;
+    } catch {
+      return { error: "Invalid tier configuration" };
+    }
+  }
+
+  const parsed = commissionSettingsSchema.safeParse({
+    commissionMode: formData.get("commissionMode"),
+    defaultCommissionRate: parseFloat((formData.get("defaultCommissionRate") as string) || "0"),
+    commissionTiers: tiers,
+  });
+
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message || "Invalid commission settings" };
+  }
+
+  const { commissionMode, defaultCommissionRate, commissionTiers } = parsed.data;
+
+  if (commissionMode === "TIERED" && !planHasFeature(shop.plan, "tiered_commissions")) {
     return { error: "Tiered commissions require Starter plan or higher" };
   }
 
   await db.shop.update({
     where: { id: shop.id },
     data: {
-      commissionMode: mode as "FLAT" | "TIERED",
-      defaultCommissionRate: rate,
-      commissionTiers: tiersJson ? JSON.parse(tiersJson) : null,
+      commissionMode,
+      defaultCommissionRate,
+      commissionTiers:
+        commissionTiers && commissionTiers.length > 0 ? commissionTiers : Prisma.JsonNull,
     },
   });
 
@@ -200,6 +223,10 @@ export default function CommissionSettings() {
       </BlockStack>
     </Page>
   );
+}
+
+export function ErrorBoundary() {
+  return boundary.error(useRouteError());
 }
 
 export const headers: HeadersFunction = (headersArgs) => {

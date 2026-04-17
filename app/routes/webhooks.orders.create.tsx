@@ -17,6 +17,8 @@ import db from "../db.server";
 import { calculateCommission } from "../lib/commission.server";
 import type { CommissionTier } from "../lib/commission.server";
 import type { CommissionMode } from "@prisma/client";
+import { runFraudChecks, flagAffiliate } from "../lib/fraud.server";
+import { planHasFeature } from "../lib/plan-features.server";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const { shop, topic, payload } = await authenticate.webhook(request);
@@ -40,7 +42,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       order_number: number;
       total_price: string;
       discount_codes?: Array<{ code: string; amount: string; type: string }>;
+      customer?: { email?: string } | null;
     };
+
+    const customerEmail = orderData.customer?.email || null;
 
     const orderId = String(orderData.id);
     const orderAmount = parseFloat(orderData.total_price || "0");
@@ -122,6 +127,40 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       console.log(
         `Order ${orderId}: Attributed to affiliate ${affiliate.code}, commission: ₹${commission.commissionAmount}`
       );
+
+      // Run fraud detection (PRO plan only — degrades gracefully for other plans)
+      if (planHasFeature(shopRecord.plan, "fraud_detection")) {
+        try {
+          const fraudResult = await runFraudChecks(
+            affiliate.id,
+            affiliate.email,
+            customerEmail
+          );
+
+          if (fraudResult.isSuspicious) {
+            const flagReasons = fraudResult.flags.join("; ");
+            console.warn(
+              `FRAUD ALERT [${fraudResult.severity}] Order ${orderId}, Affiliate ${affiliate.code}: ${flagReasons}`
+            );
+
+            // Auto-flag affiliate on high severity
+            if (fraudResult.severity === "high") {
+              await flagAffiliate(affiliate.id, flagReasons);
+              // Persist the flag reasons on the affiliate record
+              await db.affiliate.update({
+                where: { id: affiliate.id },
+                data: { fraudFlags: flagReasons },
+              });
+              console.warn(
+                `Affiliate ${affiliate.code} auto-flagged due to high severity fraud detection`
+              );
+            }
+          }
+        } catch (fraudError) {
+          // Fraud checks should never block order processing
+          console.error(`Fraud check failed for order ${orderId}:`, fraudError);
+        }
+      }
 
       // Only attribute to the first matching affiliate code
       break;

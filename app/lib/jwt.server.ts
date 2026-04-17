@@ -92,7 +92,7 @@ export const affiliateSessionStorage = createCookieSessionStorage({
     httpOnly: true,
     path: "/portal",
     sameSite: "lax",
-    secrets: [process.env.JWT_SECRET || "default_local_secret"],
+    secrets: [getJWTSecret()],
     secure: process.env.NODE_ENV === "production",
   },
 });

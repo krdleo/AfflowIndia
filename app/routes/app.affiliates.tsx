@@ -13,12 +13,14 @@ import type {
   HeadersFunction,
   LoaderFunctionArgs,
 } from "react-router";
-import { useLoaderData, useFetcher, useSearchParams, useNavigate } from "react-router";
+import { useLoaderData, useFetcher, useSearchParams, useNavigate, useRouteError } from "react-router";
 import bcrypt from "bcryptjs";
 import { authenticate } from "../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import db from "../db.server";
 import { checkAffiliateLimit, PLAN_CONFIGS } from "../lib/billing.server";
+import { planHasFeature } from "../lib/plan-features.server";
+import { adminAddAffiliateSchema, bulkEmailSchema } from "../lib/validation.server";
 import {
   Page,
   Badge,
@@ -34,6 +36,7 @@ import {
   Text,
   Modal,
   FormLayout,
+  Divider,
 } from "@shopify/polaris";
 
 const PAGE_SIZE = 20;
@@ -80,6 +83,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         totalClicks: true,
         totalSales: true,
         pendingCommission: true,
+        fraudFlags: true,
         createdAt: true,
       },
     }),
@@ -89,6 +93,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       db.affiliate.count({ where: { shopId: shop.id, status: "PENDING" } }),
       db.affiliate.count({ where: { shopId: shop.id, status: "ACTIVE" } }),
       db.affiliate.count({ where: { shopId: shop.id, status: "SUSPENDED" } }),
+      db.affiliate.count({ where: { shopId: shop.id, status: "FLAGGED" } }),
     ]),
   ]);
 
@@ -116,13 +121,17 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       pending: statusCounts[1],
       active: statusCounts[2],
       suspended: statusCounts[3],
+      flagged: statusCounts[4],
     },
     limitInfo: {
       ...limitInfo,
       planName: PLAN_CONFIGS[shop.plan].name,
     },
     shopPlan: shop.plan,
+    shopDomain: shop.shopDomain,
     defaultCommissionRate: Number(shop.defaultCommissionRate),
+    canSendEmail: planHasFeature(shop.plan, "email_notifications"),
+    hasFraudDetection: planHasFeature(shop.plan, "fraud_detection"),
   };
 };
 
@@ -147,15 +156,21 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       return { error: `Affiliate limit reached for the ${PLAN_CONFIGS[shop.plan].name} plan. Upgrade to add more.` };
     }
 
-    const name = (formData.get("name") as string)?.trim();
-    const email = (formData.get("email") as string)?.trim().toLowerCase();
-    const commissionRate = parseFloat((formData.get("commissionRate") as string) || "10");
-    const discountPercent = parseFloat((formData.get("discountPercent") as string) || "10");
-    let code = ((formData.get("code") as string) || "").trim().toUpperCase();
+    const parsed = adminAddAffiliateSchema.safeParse({
+      name: (formData.get("name") as string) ?? "",
+      email: (formData.get("email") as string) ?? "",
+      commissionRate: parseFloat((formData.get("commissionRate") as string) || "10"),
+      discountPercent: parseFloat((formData.get("discountPercent") as string) || "10"),
+      code: ((formData.get("code") as string) || "").trim(),
+    });
 
-    if (!name || !email) {
-      return { error: "Name and email are required" };
+    if (!parsed.success) {
+      return { error: parsed.error.issues[0]?.message || "Invalid affiliate data" };
     }
+
+    const { name, commissionRate, discountPercent } = parsed.data;
+    const email = parsed.data.email.toLowerCase();
+    let code = parsed.data.code || "";
 
     if (!code) {
       const base = name.replace(/[^A-Za-z]/g, "").toUpperCase().substring(0, 5) || "AFF";
@@ -196,6 +211,103 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       affiliateEmail: email,
       affiliateCode: code,
     };
+  }
+
+  // ── Bulk email to all active affiliates ─────────────────────
+  if (actionType === "bulk_email") {
+    if (!planHasFeature(shop.plan, "email_notifications")) {
+      return { error: "Bulk email requires the Starter plan or higher." };
+    }
+
+    const parsed = bulkEmailSchema.safeParse({
+      subject: (formData.get("subject") as string) ?? "",
+      message: (formData.get("message") as string) ?? "",
+    });
+
+    if (!parsed.success) {
+      return { error: parsed.error.issues[0]?.message || "Invalid email content" };
+    }
+
+    const { subject, message } = parsed.data;
+
+    const activeAffiliates = await db.affiliate.findMany({
+      where: { shopId: shop.id, status: "ACTIVE" },
+      select: { email: true, name: true },
+    });
+
+    if (activeAffiliates.length === 0) {
+      return { error: "No active affiliates to email." };
+    }
+
+    const { sendBulkAnnouncementEmail } = await import("../lib/email.server");
+    let sentCount = 0;
+    let failCount = 0;
+
+    for (const aff of activeAffiliates) {
+      try {
+        await sendBulkAnnouncementEmail(
+          aff.email,
+          aff.name,
+          subject,
+          message,
+          shop.shopDomain
+        );
+        sentCount++;
+      } catch (err) {
+        console.error(`Failed to send email to ${aff.email}:`, err);
+        failCount++;
+      }
+    }
+
+    const resultMessage = failCount > 0
+      ? `Email sent to ${sentCount} affiliates (${failCount} failed)`
+      : `Email sent to ${sentCount} affiliates`;
+    return { success: true, message: resultMessage };
+  }
+
+  // ── Export affiliates as CSV ───────────────────────────────
+  if (actionType === "export_csv") {
+    const { generateCSV, csvResponse } = await import("../lib/csv.server");
+
+    const allAffiliates = await db.affiliate.findMany({
+      where: { shopId: shop.id },
+      select: {
+        name: true,
+        email: true,
+        code: true,
+        status: true,
+        totalClicks: true,
+        totalSales: true,
+        pendingCommission: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    const headers = [
+      "Name",
+      "Email",
+      "Code",
+      "Status",
+      "Total Clicks",
+      "Total Sales (INR)",
+      "Pending Commission (INR)",
+      "Joined",
+    ];
+    const rows = allAffiliates.map((a) => [
+      a.name,
+      a.email,
+      a.code,
+      a.status,
+      a.totalClicks,
+      Number(a.totalSales).toFixed(2),
+      Number(a.pendingCommission).toFixed(2),
+      a.createdAt.toISOString().split("T")[0],
+    ]);
+
+    const csv = generateCSV(headers, rows);
+    const date = new Date().toISOString().split("T")[0];
+    return csvResponse(csv, `affiliates-${date}.csv`);
   }
 
   // ── Existing affiliate actions (all need affiliateId) ───────
@@ -300,16 +412,27 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       }
     }
 
+    case "unflag": {
+      await db.affiliate.update({
+        where: { id: affiliateId },
+        data: { status: "ACTIVE", fraudFlags: null },
+      });
+      return { success: true, message: `${affiliate.name} reviewed and unflagged` };
+    }
+
     default:
       return { error: "Unknown action" };
   }
 };
 
 export default function Affiliates() {
-  const { affiliates, totalCount, hasMore, nextCursor, statusCounts, limitInfo, defaultCommissionRate } =
-    useLoaderData<typeof loader>();
+  const {
+    affiliates, totalCount, hasMore, nextCursor, statusCounts,
+    limitInfo, defaultCommissionRate, canSendEmail, hasFraudDetection,
+  } = useLoaderData<typeof loader>();
   const [searchParams, setSearchParams] = useSearchParams();
   const fetcher = useFetcher<typeof action>();
+  const navigate = useNavigate();
 
   const currentStatus = searchParams.get("status") || "ALL";
   const currentSearch = searchParams.get("search") || "";
@@ -335,6 +458,10 @@ export default function Affiliates() {
     code: string;
     tempPassword: string;
   } | null>(null);
+
+  // Bulk email state
+  const [emailModalOpen, setEmailModalOpen] = useState(false);
+  const [emailForm, setEmailForm] = useState({ subject: "", message: "" });
 
   useEffect(() => {
     if (fetcher.data) {
@@ -396,6 +523,9 @@ export default function Affiliates() {
     { id: "PENDING", content: `Pending (${statusCounts.pending})` },
     { id: "ACTIVE", content: `Active (${statusCounts.active})` },
     { id: "SUSPENDED", content: `Suspended (${statusCounts.suspended})` },
+    ...(hasFraudDetection
+      ? [{ id: "FLAGGED", content: `Flagged (${statusCounts.flagged})` }]
+      : []),
   ];
   const selectedTab = Math.max(tabs.findIndex(t => t.id === currentStatus), 0);
 
@@ -411,17 +541,26 @@ export default function Affiliates() {
         <Badge>{affiliate.code}</Badge>
       </IndexTable.Cell>
       <IndexTable.Cell>
-        <Badge
-          tone={
-            affiliate.status === "ACTIVE"
-              ? "success"
-              : affiliate.status === "PENDING"
-              ? "warning"
-              : "critical"
-          }
-        >
-          {affiliate.status}
-        </Badge>
+        <BlockStack gap="100">
+          <Badge
+            tone={
+              affiliate.status === "ACTIVE"
+                ? "success"
+                : affiliate.status === "PENDING"
+                ? "warning"
+                : affiliate.status === "FLAGGED"
+                ? "attention"
+                : "critical"
+            }
+          >
+            {affiliate.status}
+          </Badge>
+          {affiliate.status === "FLAGGED" && affiliate.fraudFlags && (
+            <Text as="span" variant="bodySm" tone="caution">
+              {affiliate.fraudFlags}
+            </Text>
+          )}
+        </BlockStack>
       </IndexTable.Cell>
       <IndexTable.Cell>{affiliate.totalClicks}</IndexTable.Cell>
       <IndexTable.Cell>{formatINR(affiliate.totalSales)}</IndexTable.Cell>
@@ -475,6 +614,30 @@ export default function Affiliates() {
               Reactivate
             </Button>
           )}
+          {affiliate.status === "FLAGGED" && (
+            <>
+              <Button
+                variant="primary"
+                size="micro"
+                onClick={() => handleAction("unflag", affiliate.id)}
+              >
+                Unflag
+              </Button>
+              <Button
+                tone="critical"
+                size="micro"
+                onClick={() =>
+                  setConfirmAction({
+                    type: "suspend",
+                    affiliateId: affiliate.id,
+                    name: affiliate.name,
+                  })
+                }
+              >
+                Suspend
+              </Button>
+            </>
+          )}
         </InlineStack>
       </IndexTable.Cell>
     </IndexTable.Row>
@@ -489,6 +652,19 @@ export default function Affiliates() {
         disabled: !limitInfo.allowed,
         onAction: () => setAddModalOpen(true),
       }}
+      secondaryActions={[
+        ...(canSendEmail
+          ? [{
+              content: "Send email",
+              onAction: () => setEmailModalOpen(true),
+            }]
+          : []),
+        {
+          content: "Export CSV",
+          onAction: () =>
+            fetcher.submit({ _action: "export_csv" }, { method: "POST" }),
+        },
+      ]}
     >
       <BlockStack gap="400">
         {/* Limit warning */}
@@ -696,8 +872,62 @@ export default function Affiliates() {
           </Modal.Section>
         </Modal>
       )}
+
+      {/* Bulk Email Modal */}
+      <Modal
+        open={emailModalOpen}
+        onClose={() => setEmailModalOpen(false)}
+        title="Send email to all active affiliates"
+        primaryAction={{
+          content: "Send email",
+          loading: fetcher.state !== "idle",
+          onAction: () => {
+            fetcher.submit(
+              { _action: "bulk_email", ...emailForm },
+              { method: "POST" }
+            );
+            setEmailModalOpen(false);
+            setEmailForm({ subject: "", message: "" });
+          },
+        }}
+        secondaryActions={[
+          { content: "Cancel", onAction: () => setEmailModalOpen(false) },
+        ]}
+      >
+        <Modal.Section>
+          <FormLayout>
+            <Banner tone="info">
+              <p>
+                This will send an email to all {statusCounts.active} active affiliates.
+              </p>
+            </Banner>
+            <TextField
+              label="Subject"
+              value={emailForm.subject}
+              onChange={(val) => setEmailForm((f) => ({ ...f, subject: val }))}
+              maxLength={200}
+              showCharacterCount
+              autoComplete="off"
+            />
+            <TextField
+              label="Message"
+              value={emailForm.message}
+              onChange={(val) => setEmailForm((f) => ({ ...f, message: val }))}
+              multiline={6}
+              maxLength={5000}
+              showCharacterCount
+              helpText="Plain text. Line breaks will be preserved in the email."
+              autoComplete="off"
+            />
+          </FormLayout>
+        </Modal.Section>
+      </Modal>
     </Page>
   );
+}
+
+export function ErrorBoundary() {
+  return boundary.error(useRouteError());
 }
 
 export const headers: HeadersFunction = (headersArgs) => {

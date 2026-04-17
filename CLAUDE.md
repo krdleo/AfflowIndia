@@ -2,6 +2,15 @@
 
 Shopify embedded affiliate marketing app for Indian e-commerce merchants.
 
+## Debugging Strategy
+
+- When a fix doesn't resolve the reported issue, stop and investigate root cause across layers (env vars, encryption, API versions) instead of making further speculative edits
+- For Shopify app dev errors, check in order: Prisma migrations, duplicate web config (worktrees), stuck advisory locks, API version mismatches
+
+## Testing Constraints
+
+- Browser/runtime testing is not available in this environment — default to static analysis, type checks, and build verification instead of suggesting manual browser tests
+
 ## Built for Shopify — First-Attempt Review Pass
 
 **This is the #1 priority of this project.** Every line of code, every architectural decision, and every change must be made with the goal of earning the "Built for Shopify" (BFS) badge and passing Shopify's app review on the first attempt.
@@ -79,6 +88,12 @@ extensions/                 — Shopify app extensions workspace
 | `npm run lint` | ESLint |
 | `npm run typecheck` | React Router typegen + `tsc --noEmit` |
 | `npm run deploy` | Deploy to Shopify (`shopify app deploy`) |
+
+## Shopify Development
+
+- Always run `npm run typecheck` after editing Polaris/React components to catch invalid component names (e.g., Callout vs Banner)
+- When editing auth/session code, make minimal changes and verify with the user before modifying schema or auth callbacks
+- Before committing 'for a PR', verify there are actual code changes staged (`git status`) — don't create empty commits
 
 ## Architecture Conventions
 
