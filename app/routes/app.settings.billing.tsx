@@ -3,11 +3,11 @@
  */
 import { useEffect } from "react";
 import type { ActionFunctionArgs, HeadersFunction, LoaderFunctionArgs } from "react-router";
-import { useLoaderData, useFetcher, useNavigate } from "react-router";
+import { useLoaderData, useFetcher, useNavigate, useRouteError } from "react-router";
 import { authenticate } from "../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import db from "../db.server";
-import { PLAN_CONFIGS, createSubscription } from "../lib/billing.server";
+import { PLAN_CONFIGS, createSubscription, resolvePlan } from "../lib/billing.server";
 import { getPlanFeatures } from "../lib/plan-features.server";
 import {
   Page,
@@ -23,22 +23,27 @@ import {
 } from "@shopify/polaris";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
+  const { session, admin } = await authenticate.admin(request);
   const shop = await db.shop.findUnique({ where: { shopDomain: session.shop } });
   if (!shop) throw new Response("Shop not found", { status: 404 });
+
+  // Resolve plan from Shopify on every billing-page load so the UI shows the
+  // real subscription state after the merchant returns from the confirmation
+  // URL. The webhook keeps it in sync continuously; this is belt-and-braces.
+  const currentPlan = await resolvePlan(admin, session.shop);
 
   const affiliateCount = await db.affiliate.count({
     where: { shopId: shop.id, status: { not: "SUSPENDED" } },
   });
 
   return {
-    currentPlan: shop.plan,
+    currentPlan,
     affiliateCount,
     plans: Object.entries(PLAN_CONFIGS).map(([key, config]) => ({
       key,
       ...config,
       features: getPlanFeatures(key as "FREE" | "STARTER" | "PRO"),
-      isCurrent: key === shop.plan,
+      isCurrent: key === currentPlan,
       affiliateLimit: config.affiliateLimit === Infinity ? "Unlimited" : config.affiliateLimit.toString(),
     })),
   };
@@ -163,6 +168,10 @@ export default function BillingSettings() {
       </BlockStack>
     </Page>
   );
+}
+
+export function ErrorBoundary() {
+  return boundary.error(useRouteError());
 }
 
 export const headers: HeadersFunction = (headersArgs) => {

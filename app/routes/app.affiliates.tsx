@@ -13,13 +13,14 @@ import type {
   HeadersFunction,
   LoaderFunctionArgs,
 } from "react-router";
-import { useLoaderData, useFetcher, useSearchParams, useNavigate } from "react-router";
+import { useLoaderData, useFetcher, useSearchParams, useNavigate, useRouteError } from "react-router";
 import bcrypt from "bcryptjs";
 import { authenticate } from "../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import db from "../db.server";
 import { checkAffiliateLimit, PLAN_CONFIGS } from "../lib/billing.server";
 import { planHasFeature } from "../lib/plan-features.server";
+import { adminAddAffiliateSchema, bulkEmailSchema } from "../lib/validation.server";
 import {
   Page,
   Badge,
@@ -155,15 +156,21 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       return { error: `Affiliate limit reached for the ${PLAN_CONFIGS[shop.plan].name} plan. Upgrade to add more.` };
     }
 
-    const name = (formData.get("name") as string)?.trim();
-    const email = (formData.get("email") as string)?.trim().toLowerCase();
-    const commissionRate = parseFloat((formData.get("commissionRate") as string) || "10");
-    const discountPercent = parseFloat((formData.get("discountPercent") as string) || "10");
-    let code = ((formData.get("code") as string) || "").trim().toUpperCase();
+    const parsed = adminAddAffiliateSchema.safeParse({
+      name: (formData.get("name") as string) ?? "",
+      email: (formData.get("email") as string) ?? "",
+      commissionRate: parseFloat((formData.get("commissionRate") as string) || "10"),
+      discountPercent: parseFloat((formData.get("discountPercent") as string) || "10"),
+      code: ((formData.get("code") as string) || "").trim(),
+    });
 
-    if (!name || !email) {
-      return { error: "Name and email are required" };
+    if (!parsed.success) {
+      return { error: parsed.error.issues[0]?.message || "Invalid affiliate data" };
     }
+
+    const { name, commissionRate, discountPercent } = parsed.data;
+    const email = parsed.data.email.toLowerCase();
+    let code = parsed.data.code || "";
 
     if (!code) {
       const base = name.replace(/[^A-Za-z]/g, "").toUpperCase().substring(0, 5) || "AFF";
@@ -212,18 +219,16 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       return { error: "Bulk email requires the Starter plan or higher." };
     }
 
-    const subject = (formData.get("subject") as string)?.trim();
-    const message = (formData.get("message") as string)?.trim();
+    const parsed = bulkEmailSchema.safeParse({
+      subject: (formData.get("subject") as string) ?? "",
+      message: (formData.get("message") as string) ?? "",
+    });
 
-    if (!subject || !message) {
-      return { error: "Subject and message are required." };
+    if (!parsed.success) {
+      return { error: parsed.error.issues[0]?.message || "Invalid email content" };
     }
-    if (subject.length > 200) {
-      return { error: "Subject must be at most 200 characters." };
-    }
-    if (message.length > 5000) {
-      return { error: "Message must be at most 5,000 characters." };
-    }
+
+    const { subject, message } = parsed.data;
 
     const activeAffiliates = await db.affiliate.findMany({
       where: { shopId: shop.id, status: "ACTIVE" },
@@ -919,6 +924,10 @@ export default function Affiliates() {
       </Modal>
     </Page>
   );
+}
+
+export function ErrorBoundary() {
+  return boundary.error(useRouteError());
 }
 
 export const headers: HeadersFunction = (headersArgs) => {

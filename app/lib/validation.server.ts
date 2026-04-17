@@ -72,6 +72,34 @@ export const affiliateSignupSchema = z.object({
 
 export type AffiliateSignupInput = z.infer<typeof affiliateSignupSchema>;
 
+// ─── Admin: Add Affiliate Manually ───────────────────────────
+
+export const adminAddAffiliateSchema = z.object({
+  name: z
+    .string()
+    .min(2, "Name must be at least 2 characters")
+    .max(100)
+    .transform(sanitizeString),
+  email,
+  commissionRate: z
+    .number()
+    .min(0, "Commission rate must be at least 0%")
+    .max(100, "Commission rate must be at most 100%"),
+  discountPercent: z
+    .number()
+    .min(0, "Discount must be at least 0%")
+    .max(100, "Discount must be at most 100%"),
+  code: z
+    .string()
+    .max(30)
+    .regex(/^[A-Za-z0-9_-]*$/, "Code can only contain letters, numbers, hyphens, underscores")
+    .transform((v) => v.toUpperCase().trim())
+    .optional()
+    .or(z.literal("")),
+});
+
+export type AdminAddAffiliateInput = z.infer<typeof adminAddAffiliateSchema>;
+
 // ─── Affiliate Login ─────────────────────────────────────────
 
 export const affiliateLoginSchema = z.object({

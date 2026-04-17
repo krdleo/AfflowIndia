@@ -7,7 +7,7 @@
 
 import { useEffect } from "react";
 import type { HeadersFunction, LoaderFunctionArgs } from "react-router";
-import { useLoaderData, useRevalidator } from "react-router";
+import { useLoaderData, useRevalidator, useRouteError } from "react-router";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
@@ -313,6 +313,10 @@ export default function Dashboard() {
       </BlockStack>
     </Page>
   );
+}
+
+export function ErrorBoundary() {
+  return boundary.error(useRouteError());
 }
 
 export const headers: HeadersFunction = (headersArgs) => {
