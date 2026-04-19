@@ -5,6 +5,14 @@ import { createReadableStreamFromReadable } from "@react-router/node";
 import { type EntryContext } from "react-router";
 import { isbot } from "isbot";
 import { addDocumentResponseHeaders } from "./shopify.server";
+import { initCronJobs } from "./lib/cron.server";
+
+const globalAny = globalThis as unknown as { __afflowCronInitialized?: boolean };
+if (process.env.NODE_ENV === "production" && !globalAny.__afflowCronInitialized) {
+  globalAny.__afflowCronInitialized = true;
+  initCronJobs();
+  console.log("[server] Cron jobs registered successfully");
+}
 
 export const streamTimeout = 5000;
 
