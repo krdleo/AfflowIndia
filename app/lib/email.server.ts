@@ -23,8 +23,14 @@ function getResend(): Resend {
   return resendClient;
 }
 
-const FROM_EMAIL = process.env.EMAIL_FROM || "onboarding@resend.dev";
+const FROM_EMAIL = process.env.EMAIL_FROM || "noreply@afflow.in";
 const APP_NAME = "AfflowIndia";
+
+if (!process.env.EMAIL_FROM) {
+  console.warn(
+    `[email] EMAIL_FROM is not configured — falling back to ${FROM_EMAIL}. Set EMAIL_FROM in the environment to silence this warning.`
+  );
+}
 
 // ─── Email Templates ─────────────────────────────────────────
 

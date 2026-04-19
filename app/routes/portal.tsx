@@ -54,3 +54,36 @@ export default function PortalLayout() {
     </div>
   );
 }
+
+export function ErrorBoundary() {
+  return (
+    <div className="portal-layout min-h-screen bg-gray-50 flex flex-col font-sans text-gray-900">
+      <header className="bg-white shadow-sm">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center">
+          <div className="font-bold text-xl text-indigo-600">Affiliate Portal</div>
+        </div>
+      </header>
+
+      <main className="flex-grow max-w-5xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-16">
+        <div className="bg-white rounded-lg shadow p-8 text-center">
+          <h1 className="text-2xl font-semibold text-gray-900 mb-2">
+            Something went wrong
+          </h1>
+          <p className="text-gray-600 mb-6">Please refresh the page.</p>
+          <a
+            href="/portal"
+            className="inline-block bg-indigo-600 text-white px-5 py-2 rounded-md text-sm font-medium hover:bg-indigo-700"
+          >
+            Go to Portal
+          </a>
+        </div>
+      </main>
+
+      <footer className="bg-white border-t border-gray-200 mt-auto">
+        <div className="max-w-5xl mx-auto px-4 py-6 text-center text-sm text-gray-500">
+          Powered by AfflowIndia
+        </div>
+      </footer>
+    </div>
+  );
+}
