@@ -14,6 +14,11 @@ import cron from "node-cron";
 import db from "../db.server";
 import { calculateGst } from "./gst.server";
 import { calculateTds, getFinancialYearStart } from "./tds.server";
+import {
+  createContact,
+  createUPIFundAccount,
+  createPayout as createRazorpayPayout,
+} from "./razorpay.server";
 
 /**
  * Initialize all cron jobs
@@ -119,7 +124,7 @@ async function processShopPayouts(shop: {
     const netAmount = baseAmount + gst.gstAmount - tds.tdsAmount;
 
     // Create payout record
-    await db.$transaction([
+    const [payout] = await db.$transaction([
       db.payout.create({
         data: {
           shopId: shop.id,
@@ -141,6 +146,111 @@ async function processShopPayouts(shop: {
     console.log(
       `Auto-payout created for affiliate ${affiliate.code}: ₹${netAmount}`
     );
+
+    // Initiate the actual Razorpay X payout. A failure here must not abort the
+    // loop — each affiliate is isolated so one failure cannot block the others.
+    await initiateRazorpayPayoutForAffiliate({
+      payoutId: payout.id,
+      netAmount,
+      razorpayXConfig: shop.razorpayXConfig,
+      affiliate: {
+        id: affiliate.id,
+        code: affiliate.code,
+        name: affiliate.name,
+        email: affiliate.email,
+        phone: affiliate.phone,
+        upiId: affiliate.upiId,
+      },
+    });
+  }
+}
+
+/**
+ * Initiate a Razorpay X payout for a single affiliate.
+ * On success: mark Payout PAID and record externalReference + paidAt.
+ * On failure: mark Payout FAILED and log. Never throws — callers keep looping.
+ *
+ * Status mapping: schema has no PROCESSING state, so a Razorpay-accepted payout
+ * is marked PAID (the closest terminal state). If the transfer later reverses,
+ * that must be reconciled manually or via a future Razorpay webhook handler.
+ */
+async function initiateRazorpayPayoutForAffiliate(args: {
+  payoutId: string;
+  netAmount: number;
+  razorpayXConfig: string | null;
+  affiliate: {
+    id: string;
+    code: string;
+    name: string;
+    email: string;
+    phone: string | null;
+    upiId: string | null;
+  };
+}) {
+  const { payoutId, netAmount, razorpayXConfig, affiliate } = args;
+
+  if (!razorpayXConfig) {
+    console.warn(
+      `[cron] Skipping Razorpay payout — shop has no razorpayXConfig (payoutId=${payoutId} affiliateId=${affiliate.id})`
+    );
+    return;
+  }
+
+  if (!affiliate.upiId) {
+    console.warn(
+      `[cron] Skipping Razorpay payout — affiliate has no UPI ID (payoutId=${payoutId} affiliateId=${affiliate.id})`
+    );
+    return;
+  }
+
+  try {
+    const contact = await createContact(
+      razorpayXConfig,
+      affiliate.name,
+      affiliate.email,
+      affiliate.phone || undefined
+    );
+    const fundAccount = await createUPIFundAccount(
+      razorpayXConfig,
+      contact.id,
+      affiliate.upiId
+    );
+    const razorpayPayout = await createRazorpayPayout(
+      razorpayXConfig,
+      fundAccount.id,
+      netAmount,
+      payoutId,
+      `AfflowIndia payout for ${affiliate.code}`
+    );
+
+    await db.payout.update({
+      where: { id: payoutId },
+      data: {
+        status: "PAID",
+        externalReference: razorpayPayout.id,
+        paidAt: new Date(),
+      },
+    });
+
+    console.log(
+      `[cron] Razorpay payout initiated — razorpayId=${razorpayPayout.id} payoutId=${payoutId} affiliateId=${affiliate.id}`
+    );
+  } catch (error) {
+    console.error(
+      `[cron] Razorpay payout FAILED — payoutId=${payoutId} affiliateId=${affiliate.id}:`,
+      error
+    );
+    try {
+      await db.payout.update({
+        where: { id: payoutId },
+        data: { status: "FAILED" },
+      });
+    } catch (updateError) {
+      console.error(
+        `[cron] Failed to update payout status to FAILED (payoutId=${payoutId}):`,
+        updateError
+      );
+    }
   }
 }
 
