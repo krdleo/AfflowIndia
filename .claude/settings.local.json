@@ -28,7 +28,12 @@
       "Bash(awk '{print $NF}')",
       "Bash(node -e \"const p = require\\('C:/Users/super/AfflowV2/node_modules/@react-router/express/package.json'\\); console.log\\('@react-router/express', p.version\\);\")",
       "Bash(node -e \"const p = require\\('C:/Users/super/AfflowV2/node_modules/express/package.json'\\); console.log\\('express', p.version\\);\")",
-      "Bash(node -e \"const p = require\\('C:/Users/super/AfflowV2/node_modules/@types/express/package.json'\\); console.log\\('@types/express', p.version\\);\")"
+      "Bash(node -e \"const p = require\\('C:/Users/super/AfflowV2/node_modules/@types/express/package.json'\\); console.log\\('@types/express', p.version\\);\")",
+      "Bash(git check-ignore *)",
+      "Bash(grep -E \"^\\(package-lock\\\\.json|package\\\\.json|Dockerfile\\)$\")",
+      "Bash(git ls-tree *)",
+      "Bash(npm ci *)",
+      "Bash(npm ls *)"
     ]
   }
 }
