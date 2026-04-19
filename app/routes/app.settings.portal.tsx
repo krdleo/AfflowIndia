@@ -135,7 +135,7 @@ export default function PortalSettings() {
       >
         <Banner tone="warning">
           <p>
-            Portal customization requires the Starter plan or higher.{" "}
+            Portal customization requires the Premium plan.{" "}
             <Button variant="primary" onClick={() => navigate("/app/settings/billing")}>
               Upgrade Plan
             </Button>

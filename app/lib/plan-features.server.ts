@@ -25,27 +25,26 @@ export type FeatureKey =
   | "unique_coupon_codes";
 
 /**
- * Feature availability by plan
+ * Feature availability by plan. All paid features live on PREMIUM; FREE
+ * ships only the baseline (flat commissions, manual payouts, basic dashboard,
+ * referral tracking) which are hard-coded in the app rather than gated here.
  */
 const FEATURE_MAP: Record<FeatureKey, Plan[]> = {
-  // STARTER+ features
-  tiered_commissions: ["STARTER", "PRO"],
-  custom_codes: ["STARTER", "PRO"],
-  portal_customization: ["STARTER", "PRO"],
-  email_notifications: ["STARTER", "PRO"],
-
-  // PRO-only features
-  razorpay_payouts: ["PRO"],
-  gst_invoicing: ["PRO"],
-  tds_compliance: ["PRO"],
-  fraud_detection: ["PRO"],
-  whatsapp_sharing: ["PRO"],
-  realtime_analytics: ["PRO"],
-  product_commissions: ["PRO"],
-  milestone_bonuses: ["PRO"],
-  auto_payouts: ["PRO"],
-  creative_assets: ["PRO"],
-  unique_coupon_codes: ["PRO"],
+  tiered_commissions: ["PREMIUM"],
+  custom_codes: ["PREMIUM"],
+  portal_customization: ["PREMIUM"],
+  email_notifications: ["PREMIUM"],
+  razorpay_payouts: ["PREMIUM"],
+  gst_invoicing: ["PREMIUM"],
+  tds_compliance: ["PREMIUM"],
+  fraud_detection: ["PREMIUM"],
+  whatsapp_sharing: ["PREMIUM"],
+  realtime_analytics: ["PREMIUM"],
+  product_commissions: ["PREMIUM"],
+  milestone_bonuses: ["PREMIUM"],
+  auto_payouts: ["PREMIUM"],
+  creative_assets: ["PREMIUM"],
+  unique_coupon_codes: ["PREMIUM"],
 };
 
 /**
@@ -54,9 +53,6 @@ const FEATURE_MAP: Record<FeatureKey, Plan[]> = {
 export function planHasFeature(plan: Plan, feature: FeatureKey): boolean {
   const allowedPlans = FEATURE_MAP[feature];
   if (!allowedPlans) return false;
-
-  // FREE plan always has access if it's in the list
-  // Otherwise check if the current plan is allowed
   return allowedPlans.includes(plan);
 }
 
@@ -74,10 +70,9 @@ export function getPlanFeatures(plan: Plan): FeatureKey[] {
  */
 export function getMinimumPlan(feature: FeatureKey): Plan {
   const plans = FEATURE_MAP[feature];
-  if (!plans || plans.length === 0) return "PRO";
+  if (!plans || plans.length === 0) return "PREMIUM";
   if (plans.includes("FREE")) return "FREE";
-  if (plans.includes("STARTER")) return "STARTER";
-  return "PRO";
+  return "PREMIUM";
 }
 
 /**
@@ -92,7 +87,7 @@ export function requireFeature(plan: Plan, feature: FeatureKey): void {
         feature,
         currentPlan: plan,
         requiredPlan: minPlan,
-        message: `This feature requires the ${minPlan} plan or higher.`,
+        message: `This feature requires the ${minPlan} plan.`,
       }),
       {
         status: 403,

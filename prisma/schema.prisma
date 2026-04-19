@@ -14,8 +14,7 @@ datasource db {
 
 enum Plan {
   FREE
-  STARTER
-  PRO
+  PREMIUM
 }
 
 enum PayoutMode {

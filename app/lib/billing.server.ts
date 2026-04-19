@@ -1,10 +1,9 @@
 /**
  * Billing Utilities
  *
- * Three-tier pricing model:
- * - FREE: ₹0 / $0, 20 affiliates
- * - STARTER: ₹999/mo (~$12), 200 affiliates
- * - PRO: ₹2,999/mo (~$36), unlimited affiliates
+ * Two-tier pricing model:
+ * - FREE: ₹0 / $0, unlimited affiliates
+ * - PREMIUM: ₹999/mo (~$12), unlimited affiliates, all paid features
  *
  * Uses Shopify Billing API (appSubscriptionCreate mutation). The Shopify
  * Billing API requires the charge to be in the shop's billing currency.
@@ -30,22 +29,14 @@ export const PLAN_CONFIGS: Record<Plan, PlanConfig> = {
     displayPrice: "₹0",
     usdAmount: 0,
     inrAmount: 0,
-    affiliateLimit: 20,
+    affiliateLimit: Infinity,
     trialDays: 0,
   },
-  STARTER: {
-    name: "Starter",
+  PREMIUM: {
+    name: "Premium",
     displayPrice: "₹999/mo",
     usdAmount: 12,
     inrAmount: 999,
-    affiliateLimit: 200,
-    trialDays: 14,
-  },
-  PRO: {
-    name: "Pro",
-    displayPrice: "₹2,999/mo",
-    usdAmount: 36,
-    inrAmount: 2999,
     affiliateLimit: Infinity,
     trialDays: 14,
   },
@@ -115,10 +106,8 @@ export async function resolvePlan(
         const amount = parseFloat(
           sub.lineItems?.[0]?.plan?.pricingDetails?.price?.amount || "0"
         );
-        if (amount >= 30) {
-          plan = "PRO";
-        } else if (amount >= 10) {
-          plan = "STARTER";
+        if (amount > 0) {
+          plan = "PREMIUM";
         }
       }
     }
@@ -176,7 +165,7 @@ export async function createSubscription(
       options?: { variables?: Record<string, unknown> }
     ) => Promise<Response>;
   },
-  plan: "STARTER" | "PRO",
+  plan: "PREMIUM",
   returnUrl: string
 ): Promise<string | null> {
   const config = PLAN_CONFIGS[plan];

@@ -42,7 +42,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const mode = formData.get("payoutMode") as string;
 
   if (mode === "RAZORPAY_X" && !planHasFeature(shop.plan, "razorpay_payouts")) {
-    return { error: "Razorpay X payouts require the Pro plan" };
+    return { error: "Razorpay X payouts require the Premium plan" };
   }
 
   const updateData: Record<string, unknown> = {
@@ -114,7 +114,7 @@ export default function PayoutSettings() {
                 },
                 {
                   label: "Razorpay X — Auto-pay via UPI/bank transfer" +
-                         (!canUseRazorpay ? " (Pro plan required)" : ""),
+                         (!canUseRazorpay ? " (Premium plan required)" : ""),
                   value: "RAZORPAY_X",
                   disabled: !canUseRazorpay,
                 },

@@ -39,7 +39,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   if (!shop) throw new Response("Shop not found", { status: 404 });
 
   if (!planHasFeature(shop.plan, "tds_compliance")) {
-    return { error: "TDS features require the Pro plan" };
+    return { error: "TDS features require the Premium plan" };
   }
 
   const formData = await request.formData();
@@ -79,7 +79,7 @@ export default function TdsSettings() {
       >
         <Banner tone="warning">
           <p>
-            TDS compliance features require the Pro plan.{" "}
+            TDS compliance features require the Premium plan.{" "}
             <Button
               variant="primary"
               onClick={() => navigate("/app/settings/billing")}

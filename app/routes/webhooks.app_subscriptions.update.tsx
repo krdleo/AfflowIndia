@@ -27,8 +27,14 @@ type AppSubscriptionUpdatePayload = {
 function planFromName(name: string | undefined): Plan {
   if (!name) return "FREE";
   const upper = name.toUpperCase();
-  if (upper.includes("PRO")) return "PRO";
-  if (upper.includes("STARTER")) return "STARTER";
+  // Any paid subscription (Premium, or legacy Starter/Pro names) maps to PREMIUM.
+  if (
+    upper.includes("PREMIUM") ||
+    upper.includes("STARTER") ||
+    upper.includes("PRO")
+  ) {
+    return "PREMIUM";
+  }
   return "FREE";
 }
 

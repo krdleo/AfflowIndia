@@ -13,7 +13,22 @@
       "Bash(tasklist /FI \"IMAGENAME eq node.exe\")",
       "Bash(tasklist)",
       "Bash(findstr /i node)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(git worktree *)",
+      "Bash(git checkout *)",
+      "Bash(git pull *)",
+      "Bash(cmd /c \"dir C:\\\\Users\\\\super\\\\AfflowV2\\\\.claude\\\\worktrees\\\\thirsty-jackson-5feb0c\")",
+      "Bash(cmd /c \"dir /a C:\\\\Users\\\\super\\\\AfflowV2\\\\.claude\\\\worktrees\\\\thirsty-jackson-5feb0c 2>&1\")",
+      "Bash(powershell -Command \"Get-ChildItem -Path 'C:\\\\Users\\\\super\\\\AfflowV2\\\\.claude\\\\worktrees\\\\thirsty-jackson-5feb0c' -Force | Select-Object Name\")",
+      "Bash(powershell -Command \"Test-Path 'C:\\\\Users\\\\super\\\\AfflowV2\\\\.claude\\\\worktrees\\\\thirsty-jackson-5feb0c\\\\shopify.web.toml'\")",
+      "Bash(powershell -Command \"Get-ChildItem -Path 'C:\\\\Users\\\\super\\\\AfflowV2\\\\.claude\\\\worktrees' -Recurse -Force -Name 'shopify.web.toml'\")",
+      "Bash(git commit -m ' *)",
+      "Bash(npm view *)",
+      "Bash(npm install *)",
+      "Bash(awk '{print $NF}')",
+      "Bash(node -e \"const p = require\\('C:/Users/super/AfflowV2/node_modules/@react-router/express/package.json'\\); console.log\\('@react-router/express', p.version\\);\")",
+      "Bash(node -e \"const p = require\\('C:/Users/super/AfflowV2/node_modules/express/package.json'\\); console.log\\('express', p.version\\);\")",
+      "Bash(node -e \"const p = require\\('C:/Users/super/AfflowV2/node_modules/@types/express/package.json'\\); console.log\\('@types/express', p.version\\);\")"
     ]
   }
 }

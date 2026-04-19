@@ -128,7 +128,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         `Order ${orderId}: Attributed to affiliate ${affiliate.code}, commission: ₹${commission.commissionAmount}`
       );
 
-      // Run fraud detection (PRO plan only — degrades gracefully for other plans)
+      // Run fraud detection (PREMIUM plan only — degrades gracefully on FREE)
       if (planHasFeature(shopRecord.plan, "fraud_detection")) {
         try {
           const fraudResult = await runFraudChecks(

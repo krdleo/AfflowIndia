@@ -216,7 +216,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   // ── Bulk email to all active affiliates ─────────────────────
   if (actionType === "bulk_email") {
     if (!planHasFeature(shop.plan, "email_notifications")) {
-      return { error: "Bulk email requires the Starter plan or higher." };
+      return { error: "Bulk email requires the Premium plan." };
     }
 
     const parsed = bulkEmailSchema.safeParse({

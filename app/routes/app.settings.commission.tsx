@@ -72,7 +72,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const { commissionMode, defaultCommissionRate, commissionTiers } = parsed.data;
 
   if (commissionMode === "TIERED" && !planHasFeature(shop.plan, "tiered_commissions")) {
-    return { error: "Tiered commissions require Starter plan or higher" };
+    return { error: "Tiered commissions require the Premium plan" };
   }
 
   await db.shop.update({
@@ -147,7 +147,7 @@ export default function CommissionSettings() {
                 { label: "Flat Rate — Same percentage for all affiliates", value: "FLAT" },
                 {
                   label: "Tiered — Different rates based on affiliate performance" +
-                         (!canUseTiered ? " (Starter plan required)" : ""),
+                         (!canUseTiered ? " (Premium plan required)" : ""),
                   value: "TIERED",
                   disabled: !canUseTiered,
                 },

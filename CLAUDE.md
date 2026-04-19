@@ -116,7 +116,7 @@ extensions/                 — Shopify app extensions workspace
 All sensitive affiliate data (PAN, GSTIN, bank account, UPI) is encrypted at rest using AES-256-GCM with per-field unique IVs. Use `lib/pii.server.ts` for encrypt/decrypt. PAN last 4 digits stored unencrypted for display.
 
 ### Plan Gating
-Three tiers: FREE, STARTER (₹999/mo), PRO (₹2,999/mo). Use `planHasFeature(plan, featureKey)` from `lib/plan-features.server.ts` to gate features. Affiliate count limits: FREE=20, STARTER=200, PRO=unlimited. 14-day free trial on paid tiers.
+Two tiers: FREE and PREMIUM (₹999/mo). Use `planHasFeature(plan, featureKey)` from `lib/plan-features.server.ts` to gate features. Affiliate count is unlimited on both tiers; PREMIUM unlocks all paid features (tiered commissions, portal customization, email notifications, Razorpay X, GST/TDS, fraud detection, etc.). 14-day free trial on PREMIUM.
 
 ### Commission Calculation
 Two modes: FLAT (global rate) and TIERED (rate based on affiliate's total sales and shop's tier brackets). Always use `lib/commission.server.ts` for calculation.

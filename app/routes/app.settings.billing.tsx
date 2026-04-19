@@ -42,7 +42,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     plans: Object.entries(PLAN_CONFIGS).map(([key, config]) => ({
       key,
       ...config,
-      features: getPlanFeatures(key as "FREE" | "STARTER" | "PRO"),
+      features: getPlanFeatures(key as "FREE" | "PREMIUM"),
       isCurrent: key === currentPlan,
       affiliateLimit: config.affiliateLimit === Infinity ? "Unlimited" : config.affiliateLimit.toString(),
     })),
@@ -52,14 +52,14 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 export const action = async ({ request }: ActionFunctionArgs) => {
   const { session, admin } = await authenticate.admin(request);
   const formData = await request.formData();
-  const targetPlan = formData.get("plan") as "STARTER" | "PRO";
+  const targetPlan = formData.get("plan") as "PREMIUM";
 
-  if (!targetPlan || !["STARTER", "PRO"].includes(targetPlan)) {
+  if (targetPlan !== "PREMIUM") {
     return { error: "Invalid plan" };
   }
 
   try {
-    const returnUrl = `${process.env.SHOPIFY_APP_URL}/app/settings/billing`;
+    const returnUrl = `https://${session.shop}/admin/apps/${process.env.SHOPIFY_API_KEY}/app/settings/billing`;
     const confirmationUrl = await createSubscription(admin, targetPlan, returnUrl);
 
     if (confirmationUrl) {
@@ -122,13 +122,15 @@ export default function BillingSettings() {
 
         <Layout>
           {plans.map((plan) => (
-            <Layout.Section key={plan.key} variant="oneThird">
+            <Layout.Section key={plan.key} variant="oneHalf">
               <Card>
                 <BlockStack gap="400">
                   <Text as="h2" variant="headingLg">{plan.name}</Text>
                   <Text as="p" variant="heading2xl">{plan.displayPrice}</Text>
                   <Text as="p" tone="subdued">
-                    Up to {plan.affiliateLimit} affiliates
+                    {plan.affiliateLimit === "Unlimited"
+                      ? "Unlimited affiliates"
+                      : `Up to ${plan.affiliateLimit} affiliates`}
                     {plan.trialDays > 0 && ` · ${plan.trialDays}-day free trial`}
                   </Text>
 
@@ -157,7 +159,7 @@ export default function BillingSettings() {
                         fetcher.submit({ plan: plan.key }, { method: "POST" })
                       }
                     >
-                      {currentPlan === "PRO" ? "Switch to" : "Upgrade to"} {plan.name}
+                      Upgrade to {plan.name}
                     </Button>
                   ) : null}
                 </BlockStack>
