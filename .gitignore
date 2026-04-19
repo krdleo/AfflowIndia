@@ -21,9 +21,9 @@ dist/
 # Environment
 .env
 .env.*
+!.env.example
 
-# Lock files
-package-lock.json
+# Lock files (package-lock.json is committed — required for Railway Docker builds)
 yarn.lock
 pnpm-lock.yaml
 
