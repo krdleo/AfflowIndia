@@ -7,6 +7,15 @@ import { isbot } from "isbot";
 import { addDocumentResponseHeaders } from "./shopify.server";
 import { initCronJobs } from "./lib/cron.server";
 
+// NOTE: helmet and express-rate-limit were removed from package.json because
+// the app is served by @react-router/serve, which has no middleware layer we
+// can hook into. If a custom Express server is ever introduced (e.g. a root
+// server.ts using @react-router/express), wire them back in there:
+//   - helmet() for security headers (disable its CSP/frameguard — Shopify
+//     adds its own via addDocumentResponseHeaders below)
+//   - rateLimit({ windowMs: RATE_LIMIT_WINDOW_MS, max: RATE_LIMIT_MAX }) on
+//     /api/* with defaults of 100 requests / 15 minutes per IP.
+
 const globalAny = globalThis as unknown as { __afflowCronInitialized?: boolean };
 if (process.env.NODE_ENV === "production" && !globalAny.__afflowCronInitialized) {
   globalAny.__afflowCronInitialized = true;
