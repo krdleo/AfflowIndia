@@ -41,11 +41,12 @@ export async function sendVerificationEmail(
   shopName?: string
 ): Promise<void> {
   const resend = getResend();
+  const cleanShopName = shopName?.replace(/\r?\n|\r/g, '');
 
   await resend.emails.send({
     from: `${APP_NAME} <${FROM_EMAIL}>`,
     to,
-    subject: `Verify your email — ${shopName || APP_NAME} Affiliate Program`,
+    subject: `Verify your email — ${cleanShopName || APP_NAME} Affiliate Program`,
     html: `
       <div style="font-family: -apple-system, system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <h2 style="color: #1a1a1a;">Welcome, ${escapeHtml(name)}! 🎉</h2>
@@ -169,6 +170,7 @@ export async function sendBulkAnnouncementEmail(
   shopName: string
 ): Promise<void> {
   const resend = getResend();
+  const cleanShopName = shopName.replace(/\r?\n|\r/g, '');
 
   // Convert plain text line breaks to HTML paragraphs
   const messageHtml = escapeHtml(messageText)
@@ -178,7 +180,7 @@ export async function sendBulkAnnouncementEmail(
     .join("");
 
   await resend.emails.send({
-    from: `${shopName} via ${APP_NAME} <${FROM_EMAIL}>`,
+    from: `${cleanShopName} via ${APP_NAME} <${FROM_EMAIL}>`,
     to,
     subject,
     html: `

@@ -23,7 +23,7 @@ import { planHasFeature } from "../lib/plan-features.server";
 export const action = async ({ request }: ActionFunctionArgs) => {
   const { shop, topic, payload } = await authenticate.webhook(request);
 
-  console.log(`Received ${topic} webhook for ${shop}`);
+  if (process.env.DEBUG) console.log(`Received ${topic} webhook for ${shop}`);
 
   try {
     // Find the shop in our database
@@ -32,7 +32,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     });
 
     if (!shopRecord || !shopRecord.isActive) {
-      console.log(`Shop ${shop} not found or inactive, skipping`);
+      if (process.env.DEBUG) console.log(`Shop ${shop} not found or inactive, skipping`);
       return new Response();
     }
 
@@ -53,7 +53,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     // Parse discount codes
     const discountCodes = orderData.discount_codes || [];
     if (discountCodes.length === 0) {
-      console.log(`Order ${orderId} has no discount codes, skipping`);
+      if (process.env.DEBUG) console.log(`Order ${orderId} has no discount codes, skipping`);
       return new Response();
     }
 
@@ -86,7 +86,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       });
 
       if (existingReferral) {
-        console.log(
+        if (process.env.DEBUG) console.log(
           `Order ${orderId} already processed for shop ${shop}, skipping (idempotency)`
         );
         return new Response();
@@ -124,7 +124,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         }),
       ]);
 
-      console.log(
+      if (process.env.DEBUG) console.log(
         `Order ${orderId}: Attributed to affiliate ${affiliate.code}, commission: ₹${commission.commissionAmount}`
       );
 

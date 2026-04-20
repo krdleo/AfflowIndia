@@ -6,6 +6,7 @@ import { type EntryContext } from "react-router";
 import { isbot } from "isbot";
 import { addDocumentResponseHeaders } from "./shopify.server";
 import { initCronJobs } from "./lib/cron.server";
+import "./env.server";
 
 // NOTE: helmet and express-rate-limit were removed from package.json because
 // the app is served by @react-router/serve, which has no middleware layer we

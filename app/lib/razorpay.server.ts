@@ -56,21 +56,29 @@ async function razorpayRequest(
 ): Promise<unknown> {
   const auth = Buffer.from(`${config.keyId}:${config.keySecret}`).toString("base64");
 
-  const response = await fetch(`https://api.razorpay.com/v1/${endpoint}`, {
-    method,
-    headers: {
-      Authorization: `Basic ${auth}`,
-      "Content-Type": "application/json",
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
 
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Razorpay X API error (${response.status}): ${error}`);
+  try {
+    const response = await fetch(`https://api.razorpay.com/v1/${endpoint}`, {
+      method,
+      headers: {
+        Authorization: `Basic ${auth}`,
+        "Content-Type": "application/json",
+      },
+      body: body ? JSON.stringify(body) : undefined,
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Razorpay X API error (${response.status}): ${error}`);
+    }
+
+    return await response.json();
+  } finally {
+    clearTimeout(timeoutId);
   }
-
-  return response.json();
 }
 
 /**

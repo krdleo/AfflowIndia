@@ -22,6 +22,21 @@ import {
 import { encryptAffiliatePII, decryptAffiliatePII } from "../lib/pii.server";
 import { generateToken, generateUrlSafeCode } from "../lib/encryption.server";
 import { sendVerificationEmail, sendPasswordResetEmail } from "../lib/email.server";
+import crypto from "crypto";
+
+// Mini rate limiter for auth routes
+const rateLimits = new Map<string, { count: number, resetAt: number }>();
+function checkRateLimit(ip: string, max: number, windowMs: number): boolean {
+  const now = Date.now();
+  const record = rateLimits.get(ip);
+  if (!record || now > record.resetAt) {
+    rateLimits.set(ip, { count: 1, resetAt: now + windowMs });
+    return true;
+  }
+  if (record.count >= max) return false;
+  record.count++;
+  return true;
+}
 
 function jsonResponse(data: unknown, status: number = 200) {
   return new Response(JSON.stringify(data), {
@@ -141,10 +156,15 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const pathParts = url.pathname.split("/").filter(Boolean);
   const actionName = pathParts[1] || "";
 
+  const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
+
   const body = await request.json().catch(() => ({}));
 
   switch (actionName) {
     case "signup": {
+      if (!checkRateLimit(`signup:${ip}`, 20, 15 * 60 * 1000)) {
+        return jsonResponse({ error: "Too many requests, try again later" }, 429);
+      }
       const result = affiliateSignupSchema.safeParse(body);
       if (!result.success) {
         return jsonResponse({ error: "Validation failed", details: result.error.flatten() }, 400);
@@ -168,26 +188,34 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       const passwordHash = await bcrypt.hash(data.password, 12);
       const verificationToken = generateToken();
       const referralCode = generateUrlSafeCode(8);
-      const affiliateCode = data.code || data.name.replace(/\s+/g, "").toUpperCase().slice(0, 10) + Math.floor(Math.random() * 100);
+      const affiliateCode = data.code || data.name.replace(/\s+/g, "").toUpperCase().slice(0, 10) + crypto.randomBytes(4).toString("hex").toUpperCase();
 
       const requireApproval = portalConfig.requireApproval !== false;
 
-      const affiliate = await db.affiliate.create({
-        data: {
-          shopId: shop.id,
-          name: data.name,
-          email: data.email,
-          phone: data.phone || null,
-          upiId: data.upiId || null,
-          code: affiliateCode.toUpperCase(),
-          referralCode,
-          passwordHash,
-          commissionRate: Number(shop.defaultCommissionRate),
-          status: requireApproval ? "PENDING" : "ACTIVE",
-          verificationToken,
-          verificationTokenExpiry: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
-        },
-      });
+      let affiliate;
+      try {
+        affiliate = await db.affiliate.create({
+          data: {
+            shopId: shop.id,
+            name: data.name,
+            email: data.email,
+            phone: data.phone || null,
+            upiId: data.upiId || null,
+            code: affiliateCode.toUpperCase(),
+            referralCode,
+            passwordHash,
+            commissionRate: Number(shop.defaultCommissionRate),
+            status: requireApproval ? "PENDING" : "ACTIVE",
+            verificationToken,
+            verificationTokenExpiry: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+          },
+        });
+      } catch (err: any) {
+        if (err.code === "P2002") {
+          return jsonResponse({ error: "The provided affiliate code is already taken. Please choose another one." }, 409);
+        }
+        throw err;
+      }
 
       // Send verification email
       try {
@@ -207,6 +235,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     }
 
     case "login": {
+      if (!checkRateLimit(`login:${ip}`, 30, 15 * 60 * 1000)) {
+        return jsonResponse({ error: "Too many login attempts, try again later" }, 429);
+      }
       const result = affiliateLoginSchema.safeParse(body);
       if (!result.success) {
         return jsonResponse({ error: "Validation failed", details: result.error.flatten() }, 400);
@@ -221,17 +252,29 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       });
       if (!affiliate) return jsonResponse({ error: "Invalid credentials" }, 401);
 
-      const passwordMatch = await bcrypt.compare(data.password, affiliate.passwordHash);
-      if (!passwordMatch) return jsonResponse({ error: "Invalid credentials" }, 401);
-
       if (affiliate.status === "SUSPENDED") {
         return jsonResponse({ error: "Your account has been suspended" }, 403);
       }
 
-      // Update last login
+      if (affiliate.lockoutUntil && affiliate.lockoutUntil > new Date()) {
+        return jsonResponse({ error: "Account locked out. Try again later." }, 403);
+      }
+
+      const passwordMatch = await bcrypt.compare(data.password, affiliate.passwordHash);
+      if (!passwordMatch) {
+        const newAttempts = affiliate.failedLoginAttempts + 1;
+        const updates: any = { failedLoginAttempts: newAttempts };
+        if (newAttempts >= 5) {
+          updates.lockoutUntil = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
+        }
+        await db.affiliate.update({ where: { id: affiliate.id }, data: updates });
+        return jsonResponse({ error: "Invalid credentials" }, 401);
+      }
+
+      // Reset login attempts and update last login
       await db.affiliate.update({
         where: { id: affiliate.id },
-        data: { lastLogin: new Date() },
+        data: { lastLogin: new Date(), failedLoginAttempts: 0, lockoutUntil: null },
       });
 
       const token = signToken({
@@ -278,6 +321,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     }
 
     case "forgot-password": {
+      if (!checkRateLimit(`forgot:${ip}`, 10, 15 * 60 * 1000)) {
+        return jsonResponse({ error: "Too many password resets. Try again later." }, 429);
+      }
       const result = forgotPasswordSchema.safeParse(body);
       if (!result.success) return jsonResponse({ error: "Validation failed" }, 400);
 

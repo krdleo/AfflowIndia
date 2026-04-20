@@ -39,65 +39,74 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     });
   }
 
-  const shopRecord = await db.shop.findUnique({ where: { shopDomain: shop } });
-  if (!shopRecord) {
-    return new Response(JSON.stringify({ redacted: 0 }), {
+  try {
+    const shopRecord = await db.shop.findUnique({ where: { shopDomain: shop } });
+    if (!shopRecord) {
+      return new Response(JSON.stringify({ redacted: 0 }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const matches = await db.affiliate.findMany({
+      where: {
+        shopId: shopRecord.id,
+        OR: [
+          ...(email ? [{ email }] : []),
+          ...(phone ? [{ phone }] : []),
+        ],
+      },
+      select: { id: true },
+    });
+
+    if (matches.length === 0) {
+      return new Response(JSON.stringify({ redacted: 0 }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const anonEmail = `redacted+${Date.now()}@redacted.invalid`;
+    await db.affiliate.updateMany({
+      where: { id: { in: matches.map((a) => a.id) } },
+      data: {
+        name: "Redacted",
+        email: anonEmail,
+        phone: null,
+        upiId: null,
+        panEncrypted: null,
+        panIv: null,
+        panTag: null,
+        panLast4: null,
+        gstinEncrypted: null,
+        gstinIv: null,
+        gstinTag: null,
+        legalNameEncrypted: null,
+        legalNameIv: null,
+        legalNameTag: null,
+        addressEncrypted: null,
+        addressIv: null,
+        addressTag: null,
+        bankDetailsEncrypted: null,
+        bankDetailsIv: null,
+        bankDetailsTag: null,
+        city: null,
+        state: null,
+        pincode: null,
+        status: "SUSPENDED",
+      },
+    });
+
+    return new Response(JSON.stringify({ redacted: matches.length }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (error) {
+    console.error(`Failed to redact customers for ${shop}:`, error);
+    // Return 200 to strictly prevent Shopify from retrying unrecoverable database errors
+    return new Response(JSON.stringify({ error: "Internal Server Error" }), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });
   }
-
-  const matches = await db.affiliate.findMany({
-    where: {
-      shopId: shopRecord.id,
-      OR: [
-        ...(email ? [{ email }] : []),
-        ...(phone ? [{ phone }] : []),
-      ],
-    },
-    select: { id: true },
-  });
-
-  if (matches.length === 0) {
-    return new Response(JSON.stringify({ redacted: 0 }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-
-  const anonEmail = `redacted+${Date.now()}@redacted.invalid`;
-  await db.affiliate.updateMany({
-    where: { id: { in: matches.map((a) => a.id) } },
-    data: {
-      name: "Redacted",
-      email: anonEmail,
-      phone: null,
-      upiId: null,
-      panEncrypted: null,
-      panIv: null,
-      panTag: null,
-      panLast4: null,
-      gstinEncrypted: null,
-      gstinIv: null,
-      gstinTag: null,
-      legalNameEncrypted: null,
-      legalNameIv: null,
-      legalNameTag: null,
-      addressEncrypted: null,
-      addressIv: null,
-      addressTag: null,
-      bankDetailsEncrypted: null,
-      bankDetailsIv: null,
-      bankDetailsTag: null,
-      city: null,
-      state: null,
-      pincode: null,
-      status: "SUSPENDED",
-    },
-  });
-
-  return new Response(JSON.stringify({ redacted: matches.length }), {
-    status: 200,
-    headers: { "Content-Type": "application/json" },
-  });
 };

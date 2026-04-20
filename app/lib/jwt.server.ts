@@ -33,6 +33,7 @@ export function signToken(payload: JWTPayload): string {
     expiresIn: "7d",
     issuer: "afflowindia",
     audience: "affiliate-portal",
+    algorithm: "HS256",
   });
 }
 
@@ -45,6 +46,7 @@ export function verifyToken(token: string): JWTPayload | null {
     const decoded = jwt.verify(token, getJWTSecret(), {
       issuer: "afflowindia",
       audience: "affiliate-portal",
+      algorithms: ["HS256"],
     });
     return decoded as JWTPayload;
   } catch {

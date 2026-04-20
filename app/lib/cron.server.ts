@@ -27,8 +27,23 @@ import {
 export function initCronJobs() {
   // Auto monthly payouts — 1st of each month at 9:00 AM IST (3:30 AM UTC)
   cron.schedule("30 3 1 * *", async () => {
-    console.log("Running auto monthly payouts...");
-    await processAutoPayouts();
+    try {
+      const lockData = await db.$queryRawUnsafe<{ pg_try_advisory_lock: boolean }[]>("SELECT pg_try_advisory_lock(1001);");
+      const hasLock = lockData?.[0]?.pg_try_advisory_lock;
+      
+      if (!hasLock) {
+        console.log("Cron job already running on another instance, skipping...");
+        return;
+      }
+      
+      console.log("Running auto monthly payouts...");
+      await processAutoPayouts();
+    } catch (err) {
+      console.error("Error obtaining cron lock", err);
+    } finally {
+      // Release lock
+      await db.$executeRawUnsafe("SELECT pg_advisory_unlock(1001);").catch(() => {});
+    }
   });
 
   console.log("Cron jobs initialized");

@@ -1,66 +1,56 @@
-# AfflowIndia — Shopify App Configuration
-# Affiliate marketing app for Indian e-commerce merchants
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
 client_id = "032e75d7a920d85176feab7fda8524c8"
 name = "Afflow"
-application_url = "https://afflow.in"
+application_url = "https://www.afflow.in"
 embedded = true
-
-[access_scopes]
-# Minimum required scopes for BFS compliance
-# read_orders: for webhook order data attribution
-# write_discounts: for creating affiliate discount codes
-# write_app_proxy: for the affiliate portal proxy
-scopes = "read_orders, write_discounts, write_app_proxy"
-
-[auth]
-redirect_urls = [
-  "https://afflow.in/auth/callback",
-  "https://afflow.in/auth/shopify/callback",
-  "https://afflow.in/api/auth/callback"
-]
 
 [build]
 automatically_update_urls_on_dev = true
 
 [webhooks]
-api_version = "2026-04"
+api_version = "2025-10"
 
-  # Core: Order attribution — this is the main event for tracking affiliate sales
   [[webhooks.subscriptions]]
-  topics = ["orders/create"]
-  uri = "/webhooks/orders/create"
-
-  # Core: App lifecycle management
-  [[webhooks.subscriptions]]
-  topics = ["app/uninstalled"]
-  uri = "/webhooks/app/uninstalled"
-
-  # Core: Scope changes
-  [[webhooks.subscriptions]]
-  topics = ["app/scopes_update"]
-  uri = "/webhooks/app/scopes_update"
-
-  # Billing: keep shop.plan in sync with Shopify subscription state
-  [[webhooks.subscriptions]]
-  topics = ["app_subscriptions/update"]
+  topics = [ "app_subscriptions/update" ]
   uri = "/webhooks/app_subscriptions/update"
 
-  # GDPR Mandatory compliance webhooks (required for App Store)
+  [[webhooks.subscriptions]]
+  topics = [ "app/scopes_update" ]
+  uri = "/webhooks/app/scopes_update"
+
   [[webhooks.subscriptions]]
   uri = "/webhooks/customers/data_request"
-  compliance_topics = ["customers/data_request"]
+  compliance_topics = [ "customers/data_request" ]
 
   [[webhooks.subscriptions]]
   uri = "/webhooks/customers/redact"
-  compliance_topics = ["customers/redact"]
+  compliance_topics = [ "customers/redact" ]
 
   [[webhooks.subscriptions]]
   uri = "/webhooks/shop/redact"
-  compliance_topics = ["shop/redact"]
+  compliance_topics = [ "shop/redact" ]
 
-# App Proxy configuration for affiliate portal
-# Affiliates access: store.myshopify.com/a/ref/...
+  [[webhooks.subscriptions]]
+  topics = [ "app/uninstalled" ]
+  uri = "/webhooks/app/uninstalled"
+
+  [[webhooks.subscriptions]]
+  topics = [ "orders/create" ]
+  uri = "/webhooks/orders/create"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "read_orders,write_app_proxy,write_discounts"
+
+[auth]
+redirect_urls = [
+  "https://www.afflow.in/auth/callback",
+  "https://www.afflow.in/auth/shopify/callback",
+  "https://www.afflow.in/api/auth/callback"
+]
+
 [app_proxy]
-url = "/proxy"
-prefix = "a"
+url = "https://www.afflow.in/proxy"
 subpath = "ref"
+prefix = "a"
