@@ -151,66 +151,72 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   // ── Add affiliate manually ──────────────────────────────────
   if (actionType === "add_affiliate") {
-    const limitInfo = await checkAffiliateLimit(shop.id, shop.plan);
-    if (!limitInfo.allowed) {
-      return { error: `Affiliate limit reached for the ${PLAN_CONFIGS[shop.plan].name} plan. Upgrade to add more.` };
+    try {
+      const limitInfo = await checkAffiliateLimit(shop.id, shop.plan);
+      if (!limitInfo.allowed) {
+        return { error: `Affiliate limit reached for the ${PLAN_CONFIGS[shop.plan].name} plan. Upgrade to add more.` };
+      }
+
+      const parsed = adminAddAffiliateSchema.safeParse({
+        name: (formData.get("name") as string) ?? "",
+        email: (formData.get("email") as string) ?? "",
+        commissionRate: parseFloat((formData.get("commissionRate") as string) || "10"),
+        discountPercent: parseFloat((formData.get("discountPercent") as string) || "10"),
+        code: ((formData.get("code") as string) || "").trim(),
+      });
+
+      if (!parsed.success) {
+        return { error: parsed.error.issues[0]?.message || "Invalid affiliate data" };
+      }
+
+      const { name, commissionRate, discountPercent } = parsed.data;
+      const email = parsed.data.email.toLowerCase();
+      let code = parsed.data.code || "";
+
+      if (!code) {
+        const base = name.replace(/[^A-Za-z]/g, "").toUpperCase().substring(0, 5) || "AFF";
+        const suffix = Math.floor(10 + Math.random() * 90);
+        code = `${base}${suffix}`;
+      }
+
+      const existingEmail = await db.affiliate.findFirst({ where: { shopId: shop.id, email } });
+      if (existingEmail) return { error: "An affiliate with this email already exists" };
+
+      const existingCode = await db.affiliate.findFirst({ where: { shopId: shop.id, code } });
+      if (existingCode) return { error: `Code "${code}" is already in use. Choose a different one.` };
+
+      const { generateUrlSafeCode } = await import("../lib/encryption.server");
+      const referralCode = generateUrlSafeCode(8);
+      const tempPassword = generateUrlSafeCode(12);
+      const passwordHash = await bcrypt.hash(tempPassword, 12);
+
+      await db.affiliate.create({
+        data: {
+          shopId: shop.id,
+          name,
+          email,
+          code,
+          referralCode,
+          commissionRate,
+          discountPercent,
+          passwordHash,
+          status: "ACTIVE",
+        },
+      });
+
+      return {
+        success: true,
+        message: `${name} added as an active affiliate`,
+        tempPassword,
+        affiliateName: name,
+        affiliateEmail: email,
+        affiliateCode: code,
+      };
+    } catch (error) {
+      console.error("[add_affiliate] Error:", error);
+      const message = error instanceof Error ? error.message : String(error);
+      return { error: `Failed to add affiliate: ${message}` };
     }
-
-    const parsed = adminAddAffiliateSchema.safeParse({
-      name: (formData.get("name") as string) ?? "",
-      email: (formData.get("email") as string) ?? "",
-      commissionRate: parseFloat((formData.get("commissionRate") as string) || "10"),
-      discountPercent: parseFloat((formData.get("discountPercent") as string) || "10"),
-      code: ((formData.get("code") as string) || "").trim(),
-    });
-
-    if (!parsed.success) {
-      return { error: parsed.error.issues[0]?.message || "Invalid affiliate data" };
-    }
-
-    const { name, commissionRate, discountPercent } = parsed.data;
-    const email = parsed.data.email.toLowerCase();
-    let code = parsed.data.code || "";
-
-    if (!code) {
-      const base = name.replace(/[^A-Za-z]/g, "").toUpperCase().substring(0, 5) || "AFF";
-      const suffix = Math.floor(10 + Math.random() * 90);
-      code = `${base}${suffix}`;
-    }
-
-    const existingEmail = await db.affiliate.findFirst({ where: { shopId: shop.id, email } });
-    if (existingEmail) return { error: "An affiliate with this email already exists" };
-
-    const existingCode = await db.affiliate.findFirst({ where: { shopId: shop.id, code } });
-    if (existingCode) return { error: `Code "${code}" is already in use. Choose a different one.` };
-
-    const { generateUrlSafeCode } = await import("../lib/encryption.server");
-    const referralCode = generateUrlSafeCode(8);
-    const tempPassword = generateUrlSafeCode(12);
-    const passwordHash = await bcrypt.hash(tempPassword, 12);
-
-    await db.affiliate.create({
-      data: {
-        shopId: shop.id,
-        name,
-        email,
-        code,
-        referralCode,
-        commissionRate,
-        discountPercent,
-        passwordHash,
-        status: "ACTIVE",
-      },
-    });
-
-    return {
-      success: true,
-      message: `${name} added as an active affiliate`,
-      tempPassword,
-      affiliateName: name,
-      affiliateEmail: email,
-      affiliateCode: code,
-    };
   }
 
   // ── Bulk email to all active affiliates ─────────────────────
