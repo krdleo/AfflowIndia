@@ -37,5 +37,9 @@
       "mcp__shopify-dev-mcp__learn_shopify_api",
       "mcp__shopify-dev-mcp__search_docs_chunks"
     ]
-  }
+  },
+  "enabledMcpjsonServers": [
+    "shopify-dev-mcp"
+  ],
+  "enableAllProjectMcpServers": true
 }

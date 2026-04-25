@@ -2,7 +2,7 @@
 
 client_id = "032e75d7a920d85176feab7fda8524c8"
 name = "Afflow"
-application_url = "https://www.afflow.in"
+application_url = "https://app.afflow.in"
 embedded = true
 
 [build]
@@ -45,12 +45,12 @@ scopes = "read_orders,write_app_proxy,write_discounts"
 
 [auth]
 redirect_urls = [
-  "https://www.afflow.in/auth/callback",
-  "https://www.afflow.in/auth/shopify/callback",
-  "https://www.afflow.in/api/auth/callback"
+  "https://app.afflow.in/auth/callback",
+  "https://app.afflow.in/auth/shopify/callback",
+  "https://app.afflow.in/api/auth/callback"
 ]
 
 [app_proxy]
-url = "https://www.afflow.in/proxy"
+url = "https://app.afflow.in/proxy"
 subpath = "ref"
 prefix = "a"

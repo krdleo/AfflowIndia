@@ -1,0 +1,7 @@
+C:\Users\super\AfflowV2\CHANGELOG.md
+C:\Users\super\AfflowV2\CLAUDE.md
+C:\Users\super\AfflowV2\implementation_plan.md
+C:\Users\super\AfflowV2\LICENSE.md
+C:\Users\super\AfflowV2\README.md
+C:\Users\super\AfflowV2\tsc_errors.txt
+C:\Users\super\AfflowV2\tsc_output.txt
