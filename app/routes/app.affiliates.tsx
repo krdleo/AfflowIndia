@@ -14,6 +14,7 @@ import type {
   LoaderFunctionArgs,
 } from "react-router";
 import { useLoaderData, useFetcher, useSearchParams, useNavigate, useRouteError } from "react-router";
+import { useAppBridge } from "@shopify/app-bridge-react";
 import bcrypt from "bcryptjs";
 import { authenticate } from "../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
@@ -432,6 +433,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function Affiliates() {
+  const shopify = useAppBridge();
   const {
     affiliates, totalCount, hasMore, nextCursor, statusCounts,
     limitInfo, defaultCommissionRate, canSendEmail, hasFraudDetection,
