@@ -33,7 +33,9 @@
       "Bash(grep -E \"^\\(package-lock\\\\.json|package\\\\.json|Dockerfile\\)$\")",
       "Bash(git ls-tree *)",
       "Bash(npm ci *)",
-      "Bash(npm ls *)"
+      "Bash(npm ls *)",
+      "mcp__shopify-dev-mcp__learn_shopify_api",
+      "mcp__shopify-dev-mcp__search_docs_chunks"
     ]
   }
 }
