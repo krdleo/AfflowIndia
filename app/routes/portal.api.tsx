@@ -466,9 +466,21 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         }
       }
 
-      // Create payout and deduct from pending
-      const [payout] = await db.$transaction([
-        db.payout.create({
+      // Create payout and deduct from pending. The conditional decrement is
+      // the authoritative balance check — the read above is advisory only, so
+      // two concurrent requests can't both spend the same pendingCommission.
+      const payout = await db.$transaction(async (tx) => {
+        const debited = await tx.affiliate.updateMany({
+          where: {
+            id: affiliate.id,
+            pendingCommission: { gte: baseAmount },
+          },
+          data: { pendingCommission: { decrement: baseAmount } },
+        });
+
+        if (debited.count === 0) return null;
+
+        return tx.payout.create({
           data: {
             shopId: affiliate.shopId,
             affiliateId: affiliate.id,
@@ -479,12 +491,12 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             mode: affiliate.shop.payoutMode === "RAZORPAY_X" ? "RAZORPAY_X" : "MANUAL",
             status: "PENDING",
           },
-        }),
-        db.affiliate.update({
-          where: { id: affiliate.id },
-          data: { pendingCommission: { decrement: baseAmount } },
-        }),
-      ]);
+        });
+      });
+
+      if (!payout) {
+        return jsonResponse({ error: "Insufficient pending commission" }, 400);
+      }
 
       return jsonResponse({
         success: true,
