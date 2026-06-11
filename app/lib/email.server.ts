@@ -100,8 +100,7 @@ export async function sendPasswordResetEmail(
 export async function sendPayoutConfirmationEmail(
   to: string,
   name: string,
-  amount: number,
-  currency: string = "INR"
+  amount: number
 ): Promise<void> {
   const resend = getResend();
 

@@ -45,7 +45,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 
   const d = result.data;
-  const updateData: Record<string, any> = {};
+  const updateData: Record<string, unknown> = {};
 
   if (d.name) updateData.name = d.name;
   updateData.phone = d.phone || null;

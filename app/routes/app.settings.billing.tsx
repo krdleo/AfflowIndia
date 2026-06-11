@@ -115,7 +115,7 @@ export default function BillingSettings() {
       <BlockStack gap="400">
         <Banner tone="info">
           <p>
-            You're currently on the <strong>{currentPlan}</strong> plan with{" "}
+            You&apos;re currently on the <strong>{currentPlan}</strong> plan with{" "}
             <strong>{affiliateCount}</strong> active affiliate(s).
           </p>
         </Banner>

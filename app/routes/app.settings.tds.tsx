@@ -66,8 +66,7 @@ export default function TdsSettings() {
 
   useEffect(() => {
     if (fetcher.data) {
-      const data = fetcher.data as Record<string, unknown>;
-      // removed shopify toast 
+      // removed shopify toast
     }
   }, [fetcher.data]);
 
@@ -111,7 +110,7 @@ export default function TdsSettings() {
           <BlockStack gap="100">
             <Text as="h2" variant="headingMd">TDS Compliance</Text>
             <Text as="p" tone="subdued">
-              When enabled, TDS will be deducted from payouts when an affiliate's cumulative payouts exceed the annual threshold.
+              When enabled, TDS will be deducted from payouts when an affiliate&apos;s cumulative payouts exceed the annual threshold.
             </Text>
           </BlockStack>
           

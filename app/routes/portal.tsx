@@ -8,7 +8,6 @@ export const links: LinksFunction = () => [
 ];
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const url = new URL(request.url);
   const isAuthenticated = await isAffiliateAuthed(request);
 
   return { isAuthenticated };

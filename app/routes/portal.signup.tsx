@@ -48,7 +48,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   const requireApproval = portalConfig.requireApproval !== false;
 
-  const affiliate = await db.affiliate.create({
+  await db.affiliate.create({
     data: {
       shopId: shop.id,
       name: data.name,

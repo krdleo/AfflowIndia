@@ -13,8 +13,7 @@
 import crypto from "crypto";
 
 const ALGORITHM = "aes-256-gcm";
-const IV_LENGTH = 16; // 128-bit IV for GCM
-const TAG_LENGTH = 16; // 128-bit auth tag
+const IV_LENGTH = 16; // 128-bit IV for GCM; GCM's default 128-bit auth tag is used
 
 function getEncryptionKey(): Buffer {
   const key = process.env.ENCRYPTION_KEY;

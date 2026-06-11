@@ -8,7 +8,6 @@
 import { useEffect, lazy, Suspense } from "react";
 import type { HeadersFunction, LoaderFunctionArgs } from "react-router";
 import { useLoaderData, useRevalidator, useRouteError } from "react-router";
-import { useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import db from "../db.server";
@@ -36,6 +35,22 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         accessTokenTag: tokenData.tag,
         scope: session.scope || "",
         isActive: true,
+      },
+    });
+  } else if (!shop.isActive) {
+    // Reinstall after uninstall: app/uninstalled set isActive=false, which
+    // disables webhook processing, click tracking, and portal signups.
+    // Reactivate and store the fresh access token (the old one was revoked).
+    const { encrypt } = await import("../lib/encryption.server");
+    const tokenData = encrypt(session.accessToken || "");
+    shop = await db.shop.update({
+      where: { id: shop.id },
+      data: {
+        isActive: true,
+        accessTokenEncrypted: tokenData.ciphertext,
+        accessTokenIv: tokenData.iv,
+        accessTokenTag: tokenData.tag,
+        scope: session.scope || "",
       },
     });
   }
