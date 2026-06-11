@@ -51,12 +51,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const session = await requireAffiliateAuth(request);
-  const formData = await request.formData();
-  
-  // Actually, payout requesting requires calculating TDS/GST. I'll just reuse the same logic
-  // from portal.api.tsx by hitting my own database directly here, or redirecting.
-  // For simplicity, I'll allow users to request ALL pending commission.
 
+  // Requests the affiliate's full pending commission as a single payout.
   const affiliate = await db.affiliate.findUnique({
     where: { id: session.affiliateId },
     include: { shop: { include: { gstSetting: true, tdsSetting: true } } },
@@ -98,8 +94,18 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     }
   }
 
-  await db.$transaction([
-    db.payout.create({
+  // The conditional decrement is the authoritative balance check — the read
+  // above is advisory, so a double-submit (or a concurrent request through
+  // the portal API) can't spend the same pendingCommission twice.
+  const payout = await db.$transaction(async (tx) => {
+    const debited = await tx.affiliate.updateMany({
+      where: { id: affiliate.id, pendingCommission: { gte: baseAmount } },
+      data: { pendingCommission: { decrement: baseAmount } },
+    });
+
+    if (debited.count === 0) return null;
+
+    return tx.payout.create({
       data: {
         shopId: affiliate.shopId,
         affiliateId: affiliate.id,
@@ -110,18 +116,18 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         mode: affiliate.shop.payoutMode === "RAZORPAY_X" ? "RAZORPAY_X" : "MANUAL",
         status: "PENDING",
       },
-    }),
-    db.affiliate.update({
-      where: { id: affiliate.id },
-      data: { pendingCommission: { decrement: baseAmount } },
-    }),
-  ]);
+    });
+  });
+
+  if (!payout) {
+    return { error: "No pending commission to request." };
+  }
 
   return { success: true, message: "Payout requested successfully!" };
 };
 
 export default function PortalPayouts() {
-  const { pendingCommission, payouts, payoutMode } = useLoaderData<typeof loader>();
+  const { pendingCommission, payouts } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
@@ -179,7 +185,7 @@ export default function PortalPayouts() {
         
         {payouts.length === 0 ? (
           <div className="p-8 text-center text-gray-500">
-            <p>You haven't requested any payouts yet.</p>
+            <p>You haven&apos;t requested any payouts yet.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
