@@ -63,8 +63,7 @@ export default function GstSettings() {
 
   useEffect(() => {
     if (fetcher.data) {
-      const data = fetcher.data as Record<string, unknown>;
-      // removed shopify toast 
+      // removed shopify toast
     }
   }, [fetcher.data]);
 

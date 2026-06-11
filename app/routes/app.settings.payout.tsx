@@ -12,7 +12,6 @@ import { encryptToString } from "../lib/encryption.server";
 import {
   Page,
   Banner,
-  Button,
   Card,
   ChoiceList,
   TextField,
@@ -77,8 +76,7 @@ export default function PayoutSettings() {
 
   useEffect(() => {
     if (fetcher.data) {
-      const data = fetcher.data as Record<string, unknown>;
-      // removed shopify toast 
+      // removed shopify toast
     }
   }, [fetcher.data]);
 

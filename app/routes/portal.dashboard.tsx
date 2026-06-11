@@ -62,7 +62,7 @@ export default function PortalDashboard() {
       <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Welcome, {affiliate.name.split(' ')[0]}!</h1>
-          <p className="text-gray-500 mt-1">Here's your affiliate performance overview.</p>
+          <p className="text-gray-500 mt-1">Here&apos;s your affiliate performance overview.</p>
         </div>
         <div className="mt-4 sm:mt-0 flex flex-col items-end">
           <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${

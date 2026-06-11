@@ -13,7 +13,7 @@ import type {
   HeadersFunction,
   LoaderFunctionArgs,
 } from "react-router";
-import { useLoaderData, useFetcher, useSearchParams, useNavigate, useRouteError } from "react-router";
+import { useLoaderData, useFetcher, useSearchParams, useRouteError } from "react-router";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import bcrypt from "bcryptjs";
 import { authenticate } from "../shopify.server";
@@ -37,7 +37,6 @@ import {
   Text,
   Modal,
   FormLayout,
-  Divider,
 } from "@shopify/polaris";
 
 const PAGE_SIZE = 20;
@@ -440,7 +439,6 @@ export default function Affiliates() {
   } = useLoaderData<typeof loader>();
   const [searchParams, setSearchParams] = useSearchParams();
   const fetcher = useFetcher<typeof action>();
-  const navigate = useNavigate();
 
   const currentStatus = searchParams.get("status") || "ALL";
   const currentSearch = searchParams.get("search") || "";

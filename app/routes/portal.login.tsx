@@ -166,7 +166,7 @@ export default function PortalLogin() {
 
       <div className="mt-6 text-center">
         <p className="text-sm text-gray-600">
-          Don't have an affiliate account?{" "}
+          Don&apos;t have an affiliate account?{" "}
           <a href="/portal/signup" className="text-indigo-600 hover:text-indigo-500 font-medium tracking-tight">
             Apply now
           </a>

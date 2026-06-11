@@ -7,13 +7,13 @@
  * - Paginated, filterable by status
  */
 
-import { useState, useEffect, useCallback } from "react";
+import { useEffect, useCallback } from "react";
 import type {
   ActionFunctionArgs,
   HeadersFunction,
   LoaderFunctionArgs,
 } from "react-router";
-import { useLoaderData, useFetcher, useSearchParams, useNavigate, useRouteError } from "react-router";
+import { useLoaderData, useFetcher, useSearchParams, useRouteError } from "react-router";
 import { authenticate } from "../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import db from "../db.server";

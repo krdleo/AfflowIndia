@@ -210,8 +210,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             verificationTokenExpiry: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
           },
         });
-      } catch (err: any) {
-        if (err.code === "P2002") {
+      } catch (err) {
+        if ((err as { code?: string })?.code === "P2002") {
           return jsonResponse({ error: "The provided affiliate code is already taken. Please choose another one." }, 409);
         }
         throw err;
@@ -263,7 +263,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       const passwordMatch = await bcrypt.compare(data.password, affiliate.passwordHash);
       if (!passwordMatch) {
         const newAttempts = affiliate.failedLoginAttempts + 1;
-        const updates: any = { failedLoginAttempts: newAttempts };
+        const updates: { failedLoginAttempts: number; lockoutUntil?: Date } = {
+          failedLoginAttempts: newAttempts,
+        };
         if (newAttempts >= 5) {
           updates.lockoutUntil = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
         }

@@ -110,7 +110,6 @@ export default function PortalSettings() {
 
   useEffect(() => {
     if (fetcher.data) {
-      const data = fetcher.data as Record<string, unknown>;
       // toast removed
     }
   }, [fetcher.data]);
