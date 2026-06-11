@@ -13,26 +13,47 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const formData = await request.formData();
-  const email = formData.get("email") as string;
+  const email = ((formData.get("email") as string) || "").toLowerCase().trim();
   const password = formData.get("password") as string;
+  const shopDomain = ((formData.get("shopDomain") as string) || "").toLowerCase().trim();
   const redirectTo = (formData.get("redirectTo") as string) || "/portal/dashboard";
 
-  if (!email || !password) {
-    return { error: "Email and password are required" };
+  if (!email || !password || !shopDomain) {
+    return { error: "Store domain, email and password are required" };
   }
 
+  const shop = await db.shop.findUnique({ where: { shopDomain } });
+  if (!shop) {
+    return { error: "Invalid email or password" };
+  }
+
+  // Scope by shop: the same email can be an affiliate of multiple stores,
+  // and each store's affiliate record is a separate account.
   const affiliate = await db.affiliate.findFirst({
-    where: { email: email.toLowerCase().trim() },
-    include: { shop: true },
+    where: { shopId: shop.id, email },
   });
 
   if (!affiliate) {
     return { error: "Invalid email or password" };
   }
 
+  if (affiliate.lockoutUntil && affiliate.lockoutUntil > new Date()) {
+    return { error: "Account temporarily locked due to too many failed attempts. Try again later." };
+  }
+
   const isValidPassword = await bcrypt.compare(password, affiliate.passwordHash);
 
   if (!isValidPassword) {
+    const newAttempts = affiliate.failedLoginAttempts + 1;
+    await db.affiliate.update({
+      where: { id: affiliate.id },
+      data: {
+        failedLoginAttempts: newAttempts,
+        ...(newAttempts >= 5
+          ? { lockoutUntil: new Date(Date.now() + 15 * 60 * 1000) }
+          : {}),
+      },
+    });
     return { error: "Invalid email or password" };
   }
 
@@ -46,10 +67,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   await db.affiliate.update({
     where: { id: affiliate.id },
-    data: { lastLogin: new Date() },
+    data: { lastLogin: new Date(), failedLoginAttempts: 0, lockoutUntil: null },
   });
 
-  const headers = await createAffiliateSession(affiliate.id, affiliate.shop.shopDomain);
+  const headers = await createAffiliateSession(affiliate.id, shop.shopDomain);
 
   return redirect(redirectTo, { headers });
 };
@@ -76,7 +97,23 @@ export default function PortalLogin() {
 
       <Form method="post" className="space-y-6">
         <input type="hidden" name="redirectTo" value={searchParams.get("redirectTo") ?? "/portal/dashboard"} />
-        
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="shopDomain">
+            Store Domain
+          </label>
+          <input
+            id="shopDomain"
+            name="shopDomain"
+            type="text"
+            required
+            defaultValue={searchParams.get("shop") ?? ""}
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors"
+            placeholder="example.myshopify.com"
+          />
+          <p className="text-xs text-gray-500 mt-1">The store whose affiliate program you joined</p>
+        </div>
+
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="email">
             Email Address
