@@ -34,6 +34,10 @@ jobs:
 
       - name: Validate Prisma
         run: npx prisma generate && npx prisma validate
+        env:
+          # prisma validate doesn't connect to the database, but the schema's
+          # env("DATABASE_URL") must resolve to something for it to load.
+          DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci"
 
       - name: Build application
         run: npm run build
