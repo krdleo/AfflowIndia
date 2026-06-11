@@ -38,6 +38,22 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         isActive: true,
       },
     });
+  } else if (!shop.isActive) {
+    // Reinstall after uninstall: app/uninstalled set isActive=false, which
+    // disables webhook processing, click tracking, and portal signups.
+    // Reactivate and store the fresh access token (the old one was revoked).
+    const { encrypt } = await import("../lib/encryption.server");
+    const tokenData = encrypt(session.accessToken || "");
+    shop = await db.shop.update({
+      where: { id: shop.id },
+      data: {
+        isActive: true,
+        accessTokenEncrypted: tokenData.ciphertext,
+        accessTokenIv: tokenData.iv,
+        accessTokenTag: tokenData.tag,
+        scope: session.scope || "",
+      },
+    });
   }
 
   // Fetch dashboard stats
