@@ -167,6 +167,7 @@ async function processShopPayouts(shop: {
     await initiateRazorpayPayoutForAffiliate({
       payoutId: payout.id,
       netAmount,
+      baseAmount,
       razorpayXConfig: shop.razorpayXConfig,
       affiliate: {
         id: affiliate.id,
@@ -183,7 +184,10 @@ async function processShopPayouts(shop: {
 /**
  * Initiate a Razorpay X payout for a single affiliate.
  * On success: mark Payout PAID and record externalReference + paidAt.
- * On failure: mark Payout FAILED and log. Never throws — callers keep looping.
+ * On failure: mark Payout FAILED and restore the affiliate's pendingCommission
+ * (which processShopPayouts zeroed out), so the money isn't silently lost and
+ * the next cycle (or a manual payout) can pick it up. Never throws — callers
+ * keep looping.
  *
  * Status mapping: schema has no PROCESSING state, so a Razorpay-accepted payout
  * is marked PAID (the closest terminal state). If the transfer later reverses,
@@ -192,6 +196,7 @@ async function processShopPayouts(shop: {
 async function initiateRazorpayPayoutForAffiliate(args: {
   payoutId: string;
   netAmount: number;
+  baseAmount: number;
   razorpayXConfig: string | null;
   affiliate: {
     id: string;
@@ -202,7 +207,7 @@ async function initiateRazorpayPayoutForAffiliate(args: {
     upiId: string | null;
   };
 }) {
-  const { payoutId, netAmount, razorpayXConfig, affiliate } = args;
+  const { payoutId, netAmount, baseAmount, razorpayXConfig, affiliate } = args;
 
   if (!razorpayXConfig) {
     console.warn(
@@ -256,13 +261,22 @@ async function initiateRazorpayPayoutForAffiliate(args: {
       error
     );
     try {
-      await db.payout.update({
-        where: { id: payoutId },
-        data: { status: "FAILED" },
-      });
+      // Mark FAILED and give the commission back to the affiliate's pending
+      // balance in one transaction — pendingCommission tracks the pre-tax
+      // base amount, so restore baseAmount (not netAmount).
+      await db.$transaction([
+        db.payout.update({
+          where: { id: payoutId },
+          data: { status: "FAILED" },
+        }),
+        db.affiliate.update({
+          where: { id: affiliate.id },
+          data: { pendingCommission: { increment: baseAmount } },
+        }),
+      ]);
     } catch (updateError) {
       console.error(
-        `[cron] Failed to update payout status to FAILED (payoutId=${payoutId}):`,
+        `[cron] Failed to mark payout FAILED and restore pendingCommission (payoutId=${payoutId}):`,
         updateError
       );
     }
