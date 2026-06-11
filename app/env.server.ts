@@ -26,7 +26,7 @@ try {
 } catch (error) {
   if (error instanceof z.ZodError) {
     console.error("❌ Invalid environment variables:");
-    for (const issue of error.errors) {
+    for (const issue of error.issues) {
       console.error(`  - ${issue.path.join(".")}: ${issue.message}`);
     }
   }
